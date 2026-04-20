@@ -1,0 +1,6 @@
+[
+  {"name": "tract_id", "type": "STRING", "mode": "REQUIRED", "description": "Foreign key to census_tracts.tract_id; source: Census TIGER/Line"},
+  {"name": "nta_code", "type": "STRING", "mode": "REQUIRED", "description": "NYC Neighborhood Tabulation Area code; source: NYC Open Data NTA boundaries (Socrata)"},
+  {"name": "nta_name", "type": "STRING", "mode": "NULLABLE", "description": "Human-readable NTA name (e.g. Jamaica); source: NYC Open Data NTA boundaries (Socrata)"},
+  {"name": "overlap_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Proportion of the census tract area that falls within this NTA; used as weight for NTA-level aggregation; derived in src/equity.py"}
+]

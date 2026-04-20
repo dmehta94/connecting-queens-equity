@@ -1,0 +1,11 @@
+[
+  {"name": "position_id", "type": "STRING", "mode": "NULLABLE", "description": "UUID generated at insert; surrogate key for each observation"},
+  {"name": "route_id", "type": "STRING", "mode": "NULLABLE", "description": "MTA route identifier; foreign key to routes.route_id"},
+  {"name": "vehicle_id", "type": "STRING", "mode": "NULLABLE", "description": "MTA vehicle identifier as returned by SIRI"},
+  {"name": "latitude", "type": "FLOAT64", "mode": "NULLABLE", "description": "Vehicle latitude at time of observation"},
+  {"name": "longitude", "type": "FLOAT64", "mode": "NULLABLE", "description": "Vehicle longitude at time of observation"},
+  {"name": "direction_ref", "type": "STRING", "mode": "NULLABLE", "description": "Inbound or outbound direction as returned by SIRI; required for per-direction frequency analysis"},
+  {"name": "next_stop_ref", "type": "STRING", "mode": "NULLABLE", "description": "Stop ID of the next stop the vehicle is approaching; used to derive stop-level service frequency"},
+  {"name": "bearing", "type": "FLOAT64", "mode": "NULLABLE", "description": "Vehicle heading in degrees; captured for potential visualization use; not used in core analysis"},
+  {"name": "collected_at", "type": "TIMESTAMP", "mode": "NULLABLE", "description": "UTC timestamp at time of API call; partition key"}
+]

@@ -1,0 +1,9 @@
+[
+  {"name": "tract_id", "type": "STRING", "mode": "NULLABLE", "description": "Census tract GEOID; source: Census TIGER/Line"},
+  {"name": "median_income", "type": "FLOAT64", "mode": "NULLABLE", "description": "Median household income; source: Census API ACS 5-year estimate variable B19013"},
+  {"name": "zero_vehicle_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of households with zero vehicles; source: Census API ACS 5-year estimate variable B08201"},
+  {"name": "housing_cost_burden_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of households spending more than 30% of income on housing; source: Census API ACS 5-year estimate variable B25070"},
+  {"name": "interborough_commute_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of workers commuting outside Queens; used for Category 5 inter-borough connectivity recommendations; source: Census API ACS 5-year estimate variable B08301"},
+  {"name": "transit_dependent", "type": "BOOL", "mode": "NULLABLE", "description": "Derived flag; true when zero_vehicle_pct is elevated AND median_income < 80% NYC AMI AND housing_cost_burden_pct > 30%; thresholds from affordable housing policy literature; derived in src/equity.py"},
+  {"name": "geometry", "type": "GEOGRAPHY", "mode": "NULLABLE", "description": "Tract polygon geometry in WGS84; used for spatial join onto stop locations; source: Census TIGER/Line"}
+]

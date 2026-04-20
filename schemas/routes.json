@@ -1,0 +1,5 @@
+[
+  {"name": "route_id", "type": "STRING", "mode": "REQUIRED", "description": "MTA route identifier as returned by the SIRI API (e.g. MTA NYCT_Q44+)"},
+  {"name": "route_name", "type": "STRING", "mode": "NULLABLE", "description": "Human-readable route name (e.g. Q44 Select Bus Service)"},
+  {"name": "active", "type": "BOOL", "mode": "NULLABLE", "description": "Whether the route is currently operating; allows soft-deletion without dropping rows"}
+]

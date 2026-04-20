@@ -1,0 +1,8 @@
+[
+  {"name": "stop_id", "type": "STRING", "mode": "REQUIRED", "description": "MTA stop identifier from GTFS static feed"},
+  {"name": "stop_name", "type": "STRING", "mode": "NULLABLE", "description": "Human-readable stop name from GTFS"},
+  {"name": "borough", "type": "STRING", "mode": "NULLABLE", "description": "Borough in which the stop is physically located. Most stops will be Queens, but express routes crossing into adjacent boroughs or Nassau County will produce non-Queens stops. Retained to support spatial filtering without data loss and future multi-borough expansion."},
+  {"name": "latitude", "type": "FLOAT64", "mode": "NULLABLE", "description": "Stop latitude in WGS84; kept alongside geometry for direct use in Folium and Streamlit map components"},
+  {"name": "longitude", "type": "FLOAT64", "mode": "NULLABLE", "description": "Stop longitude in WGS84; same rationale as latitude"},
+  {"name": "geometry", "type": "GEOGRAPHY", "mode": "NULLABLE", "description": "Point geometry in WGS84; derived from latitude and longitude at insert time; authoritative for spatial joins"}
+]

@@ -1,0 +1,11 @@
+[
+  {"name": "stop_id", "type": "STRING", "mode": "NULLABLE", "description": "Foreign key to stops.stop_id"},
+  {"name": "subway_count", "type": "INT64", "mode": "NULLABLE", "description": "Number of subway entrances within 400m; source: NYC Open Data MTA subway entrances (Socrata)"},
+  {"name": "school_count", "type": "INT64", "mode": "NULLABLE", "description": "Number of school locations within 400m; source: NYC Open Data NYC school locations (Socrata)"},
+  {"name": "fqhc_count", "type": "INT64", "mode": "NULLABLE", "description": "Number of federally qualified health centers within 400m; scoped to Section 330 PHSA designees only; source: NYC Open Data NYC DOHMH Article 28 facility directory (Socrata)"},
+  {"name": "library_count", "type": "INT64", "mode": "NULLABLE", "description": "Number of library branches within 400m; source: NYPL open data"},
+  {"name": "park_count", "type": "INT64", "mode": "NULLABLE", "description": "Number of park locations within 400m; source: NYC Open Data DPR parks dataset (Socrata)"},
+  {"name": "social_services_count", "type": "INT64", "mode": "NULLABLE", "description": "PROVISIONAL: Number of social service locations within 400m; retained only if Part 2.5 audit confirms adequate coverage, point-level geometry, and data recency; source: NYC Open Data social services (Socrata)"},
+  {"name": "food_access_score", "type": "FLOAT64", "mode": "NULLABLE", "description": "Tract-level food access score assigned to all stops within the same census tract; not a point count; methodological distinction documented in README; source: USDA ERS Food Access Research Atlas"},
+  {"name": "composite_score", "type": "FLOAT64", "mode": "NULLABLE", "description": "Tiered weighted sum across all amenity layers per essential destinations literature (Neutens 2015, Grengs 2010); equal-weight sensitivity baseline computed separately; derived in src/proximity.py"}
+]

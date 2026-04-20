@@ -1,0 +1,7 @@
+[
+  {"name": "checked_at", "type": "TIMESTAMP", "mode": "NULLABLE", "description": "UTC timestamp when the health check ran"},
+  {"name": "check_type", "type": "STRING", "mode": "NULLABLE", "description": "Type of check performed; one of row_count, gap_detection, schema_violation"},
+  {"name": "route_id", "type": "STRING", "mode": "NULLABLE", "description": "Route scoped by the check; null for dataset-wide checks"},
+  {"name": "result", "type": "STRING", "mode": "NULLABLE", "description": "Outcome of the check; one of pass or fail"},
+  {"name": "detail", "type": "STRING", "mode": "NULLABLE", "description": "Human-readable description of the result (e.g. Expected 96 rows in last 24h, found 12)"}
+]

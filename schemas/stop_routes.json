@@ -1,0 +1,4 @@
+[
+  {"name": "stop_id", "type": "STRING", "mode": "REQUIRED", "description": "Foreign key to stops.stop_id"},
+  {"name": "route_id", "type": "STRING", "mode": "REQUIRED", "description": "Foreign key to routes.route_id"}
+]
