@@ -25,10 +25,8 @@ SHUTTLES = ["Q92", "Q93", "Q96", "Q97", "Q107", "Q108", "Q109", "Q121"]
 
 def load_routes() -> pd.DataFrame:
     """
-    Load all of the routes from the source files by the NYCT and MTABC into DataFrames,
-    filter out the ones that don't service Queens, concatenate, transform route_id to
-    match the foreign key for the SIRI RealTime API, and output a single DataFrame for
-    all routes servicing Queens, excluding shuttles.
+    Load all of the routes from the source files by the NYCT and MTABC into
+    DataFrames, filter out the ones that don't service Queens, concatenate, transform route_id to match the foreign key for the SIRI RealTime API, and output a single DataFrame for all routes servicing Queens, excluding shuttles.
 
     Returns:
         pd.DataFrame: a DataFrame containing route data for all 122 bus routes that service Queens
@@ -59,6 +57,7 @@ def insert_routes() -> None:
     """
     Load data from the queens_routes DataFrame onto the routes table on BigQuery.
     """
+    
     job_config = bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE")
     job = client.load_table_from_dataframe(
         load_routes(), TABLE_ID,
