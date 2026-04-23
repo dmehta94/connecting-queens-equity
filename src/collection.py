@@ -16,6 +16,7 @@ Requirements:
 import os
 import requests
 import pandas as pd
+import uuid
 from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
@@ -84,19 +85,47 @@ def fetch_vehicle_positions(
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not fetch data for {route_id}: {e}")
         return []
+def parse_vehicle_positions(
+          route_id: str,
+          vehicles: list[dict]
+) -> list[dict]:
+        """
+        Parse vehicle location data for a single bus route.
+        
+        Transforms a raw SIRI VehicleActivity list into a list of dicts shaped to
+        the vehicle_positions BigQuery schema.
+        
+        Args:
+            route_id: MTA route identifier (e.g., 'MTA NYCT_Q27).
+            vehicles: List of raw vehicle activity dicts from SIRI VehicleActivity
+            array.
+            
+        Returns:
+            records: List of specified information for each vehicle active on the
+            route in question: position_id, route_id, vehicle_id, latitude,
+            longitude, direction_ref, next_stop_ref, bearing, collected_at.
+            Returns an empty list if vehicles is empty.
+            
+        Example:
+            >>> records = parse_vehicle_positions(
+            ...     MTA NYCT_Q27,
+            ...     vehicles
+            ... )
+        """
 
         records = []
         for vehicle in vehicles:
             journey = vehicle["MonitoredVehicleJourney"]
             location = journey["VehicleLocation"]
             records.append({
-                "position_id": ,
+                "position_id": str(uuid.uuid4()),
                 "route_id": route_id,
                 "vehicle_id": journey["VehicleRef"],
                 "latitude": location.get("Latitude"),
                 "longitude": location.get("Longitude"),
-                "direction_ref": ,
-                "next_stop_ref": ,
-                "bearing": ,
-                "collected_at": datetime.now().isoformat()
+                "direction_ref": journey.get("DirectionRef"),
+                "next_stop_ref": journey.get("MonitoredCall", {}).get("StopPointRef"),
+                "bearing": journey.get("Bearing"),
+                "collected_at": datetime.now(timezone.utc).isoformat()
             })
+        return records
