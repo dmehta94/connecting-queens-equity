@@ -20,11 +20,15 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
+from google.cloud import bigquery
 
 ENDPOINT = "https://api.prod.obanyc.com/api/siri/vehicle-monitoring.json"
 SLEEP_SECONDS = 0.5
 DATASET_ID = "connecting_queens_equity"
 TABLE_ID = "vehicle_positions"
+
+client = bigquery.Client(project="connecting-queens-equity")
+VEHICLE_POSITIONS_TABLE = "connecting-queens-equity.connecting_queens_equity.vehicle_positions"
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +133,35 @@ def parse_vehicle_positions(
                 "collected_at": datetime.now(timezone.utc).isoformat()
             })
         return records
+
+def insert_vehicle_positions(
+          rows: list[dict],
+          client: bigquery.Client
+) -> None:
+    """
+    Insert parsed vehicle position records into the vehicle_positions BigQuery table.
+
+    Uses the BigQuery streaming insert path (insert_rows_json) for low-latency
+    appends. Returns immediately without writing if rows is empty. Logs the
+    number of rows inserted on success, or logs a warning if BigQuery returns
+    errors.
+
+    Args:
+        rows: List of dicts shaped to the vehicle_positions schema. Each dict
+            must contain: position_id, route_id, vehicle_id, latitude,
+            longitude, direction_ref, next_stop_ref, bearing, collected_at.
+        client: Authenticated BigQuery client instance.
+
+    Returns:
+        None
+    """
+    
+    if not rows:
+         return
+    
+    errors = client.insert_rows_json(VEHICLE_POSITIONS_TABLE, rows)
+    if errors:
+         logger.warning(f"BigQuery insert errors: {errors}")
+    else:
+         logger.info(f"Inserted {len(rows)} rows into {VEHICLE_POSITIONS_TABLE}")
+
