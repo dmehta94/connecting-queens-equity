@@ -30,7 +30,7 @@ BUSCO_STOP_TIMES = ROOT / "data" / "raw" / "gtfs_busco" / "stop_times.txt"
 Q_ROUTES = ROOT / "data" / "raw" / "gtfs_q" / "routes.txt"
 BUSCO_ROUTES = ROOT / "data" / "raw" / "gtfs_busco" / "routes.txt"
 
-BOROUGH_BOUNDARIES = ROOT / "data" / "raw" / "nyc_borough_boundaries.geojson"
+BOROUGH_BOUNDARIES = ROOT / "data" / "raw" / "nyc_borough_boundaries_2024.geojson"
 SHUTTLES = ["Q92", "Q93", "Q96", "Q97", "Q107", "Q108", "Q109", "Q121"]
 
 client = bigquery.Client(project="connecting-queens-equity")
