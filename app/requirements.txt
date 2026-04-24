@@ -1,0 +1,4 @@
+
+# TODO: add google-cloud-bigquery, geopandas, folium as analysis layers are wired in
+pandas==2.3.3
+streamlit==1.56.0
