@@ -1,0 +1,44 @@
+[
+    {
+        "name": "swept_at",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED",
+        "description": "UTC timestamp when the collection sweep ran"
+    },
+    {
+        "name": "duration_seconds",
+        "type": "FLOAT64",
+        "mode": "NULLABLE",
+        "description": "Span of time in which the sweep ran measured in seconds"
+    },
+    {
+        "name": "routes_attempted",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Number of routes scanned by the sweep"
+    },
+    {
+        "name": "rows_inserted",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Number of rows added to BigQuery during the sweep"
+    },
+    {
+        "name": "fetch_errors",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Number of times collection.py failed to fetch a route"
+    },
+    {
+        "name": "parse_errors",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Number of times collection.py failed to parse the details of a route"
+    },
+    {
+        "name": "insert_errors",
+        "type": "INT64",
+        "mode": "NULLABLE",
+        "description": "Number of times collection.py failed to write parsed route details to BigQuery"
+    }
+]
