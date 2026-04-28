@@ -89,6 +89,10 @@ For full column-level schema documentation, see `schemas/`.
 See `requirements.txt`. Key packages: <!-- TODO: Fill in later, once key packages are determined -->
 
 ## Limitations
+* **Streamlit Cloud BigQuery credentials blocked by IAM policy**: a project-level permission presently prevents any user from generating a credential file to allow Streamlit Cloud to read data from BigQuery. While I decide how to best resolve this issue, I'm using placeholder DataFrames.
+* **Social services layer evaluated and dropped**: While I would have wanted to round out my essential service access coverage with other social services, no NYC Open Data dataset passes my coverage, point-level geometry, and recency criteria simultaneously.
+* **Queens Library branch data current as of September 2018**: The data here is stable and treated as current, though the age should be noted.
+* **USDA Food Access Atlas is tract-level, not point-level**: I perform a spatial join with neighborhood tabulation areas to mitigate this.
 
 ## Next Steps – The Policy Product
 
