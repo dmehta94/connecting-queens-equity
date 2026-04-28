@@ -39,6 +39,20 @@ The original Connecting Queens (my General Assembly Bootcamp Capstone) is a pass
 * **Accounting for transit-dependency.** I had fully depersonalized the previous Connecting Queens, focusing only the movement and locations of buses. This time around, I've derived transit-dependency from ACS data. Socioeconomic wellbeing is now at the heart of Connecting Queens: Equity in Transit & Access.
 
 ## What I Learned
+### Technical Skills
+This was my first time working with Google Cloud Platform (GCP) in this capacity. Google Cloud Run, Cloud Scheduler, and BigQuery work together masterfully to collect and maintain data. The only major change I needed to make to `collection.py` was to switch from writing data to a CSV to writing to BigQuery tables. The same script runs both locally and in Cloud Run without much modification because the authentication is handled outside the code.
+
+### Data Science Insights
+
+### MLOps Practices
+This is my first time working with a dataset on this scale, which meant monitoring by inspection or during the data cleaning stage before EDA alone no longer cut it. Instead, I adopted the industry-standard practice of looping in health and monitoring checks into my data collection cycle.
+
+### Software Engineering Practices
+
+### Unexpected Learnings
+Permission wrangling on a cloud solutions platform is tough, to say the least. I had a persistent problem with GCP not allowing anyone on the project to create new credentials. As a result, I needed to hold off on authenticating Streamlit Cloud's access to BigQuery and use placeholder DataFrames in the meantime.
+
+### Design Decisions
 
 ## Quick Start
 
