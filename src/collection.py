@@ -26,8 +26,10 @@ SLEEP_SECONDS = 0.5
 PROJECT_ID = "connecting-queens-equity"
 DATASET_ID = "connecting_queens_equity"
 TABLE_ID = "vehicle_positions"
+COLLECTION_ID = "collection_log"
 
 VEHICLE_POSITIONS_TABLE = f"{PROJECT_ID}.{DATASET_ID}.{TABLE_ID}"
+COLLECTION_LOG_TABLE = f"{PROJECT_ID}.{DATASET_ID}.{COLLECTION_ID}"
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +40,7 @@ def fetch_vehicle_positions(
         route_id: str,
         api_key: str,
         session: requests.Session
-) -> list[dict]:
+) -> list[dict] | None:
     """
     Fetch real-time vehicle location data for a single bus route.
 
@@ -87,7 +89,7 @@ def fetch_vehicle_positions(
 
     except requests.exceptions.RequestException as e:
         logger.warning(f"Could not fetch data for {route_id}: {e}")
-        return []
+        return None
 
 def parse_vehicle_positions(
           route_id: str,
@@ -137,7 +139,7 @@ def parse_vehicle_positions(
 def insert_vehicle_positions(
           rows: list[dict],
           client: bigquery.Client
-) -> None:
+) -> int:
     """
     Insert parsed vehicle position records into the vehicle_positions BigQuery table.
 
@@ -153,17 +155,64 @@ def insert_vehicle_positions(
         client: Authenticated BigQuery client instance.
 
     Returns:
-        None
+        int: number of errors from insertion
     """
     
     if not rows:
-         return
+         return 0
     
     errors = client.insert_rows_json(VEHICLE_POSITIONS_TABLE, rows)
     if errors:
          logger.warning(f"BigQuery insert errors: {errors}")
+         return len(errors)
     else:
          logger.info(f"Inserted {len(rows)} rows into {VEHICLE_POSITIONS_TABLE}")
+         return 0
+
+def log_collection_sweep(
+    swept_at: datetime,
+    duration_seconds: float,
+    routes_attempted: int,
+    rows_inserted: int,
+    fetch_errors: int,
+    parse_errors: int,
+    insert_errors: int,
+    client: bigquery.Client
+) -> None:
+    """
+    Insert a single summary record of a completed collection sweep into the
+    collection_log BigQuery table.
+    
+    Args:
+        swept_at: UTC timestamp when the collection sweep ran.
+        duration_seconds: Span of time in which the sweep ran measured in seconds.
+        routes_attempted: Number of routes scanned by the sweep.
+        rows_inserted: Number of rows added to BigQuery during the sweep.
+        fetch_errors: Number of times collection.py failed to fetch a route.
+        parse_errors: Number of times collection.py failed to parse the details of
+            a route.
+        insert_errors: Number of times collection.py failed to write parsed route
+            details to BigQuery.
+        client: Authenticated BigQuery client instance.
+    
+    Returns:
+        None
+    """
+    log_record = [{
+        "swept_at": swept_at.isoformat(),
+        "duration_seconds": duration_seconds,
+        "routes_attempted": routes_attempted,
+        "rows_inserted": rows_inserted,
+        "fetch_errors": fetch_errors,
+        "parse_errors": parse_errors,
+        "insert_errors": insert_errors
+    }]
+
+    errors = client.insert_rows_json(COLLECTION_LOG_TABLE, log_record)
+    if errors:
+         logger.warning(f"BigQuery insert errors: {errors}")
+    else:
+         logger.info(f"Inserted record at {swept_at} into {COLLECTION_LOG_TABLE}")
 
 if __name__ == "__main__":
     if not MTA_API_KEY:
@@ -176,15 +225,29 @@ if __name__ == "__main__":
     route_ids = [row["route_id"] for row in result]
      
     with requests.Session() as session:
+        sweep_start = datetime.now(timezone.utc)
+        routes_attempted = 0
+        rows_inserted = 0
+        fetch_errors = 0
+        # Known gap: parse_errors to be fully implemented later.
+        parse_errors = 0
+        insert_errors = 0
         for route in route_ids:
+            routes_attempted += 1
             vehicles = fetch_vehicle_positions(
                 route,
                 MTA_API_KEY,
                 session
             )
+            if vehicles is None:
+                fetch_errors += 1
+                continue
             rows = parse_vehicle_positions(
                 route,
                 vehicles
             )
-            insert_vehicle_positions(rows, client)
+            insert_errors += insert_vehicle_positions(rows, client)
+            rows_inserted += len(rows)
             time.sleep(SLEEP_SECONDS)
+        duration_seconds = (datetime.now(timezone.utc) - sweep_start).total_seconds()
+        log_collection_sweep(sweep_start, duration_seconds, routes_attempted, rows_inserted, fetch_errors, parse_errors, insert_errors, client)
