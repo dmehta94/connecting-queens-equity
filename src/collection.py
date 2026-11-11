@@ -55,7 +55,7 @@ def fetch_vehicle_positions(
 
     Returns:
         List of raw vehicle activity dicts from SIRI VehicleActivity array.
-	Returns an empty list if no vehicles are active on the route, or None
+        Returns an empty list if no vehicles are active on the route, or None
         if the request fails.
 
     Example:
