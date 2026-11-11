@@ -46,9 +46,8 @@ def fetch_vehicle_positions(
 
     Sends a GET request to the MTA BusTime SIRI vehicle-monitoring endpoint
     and returns the raw vehicle activity list from the SIRI Response. Returns
-    an empty list if no vehicles are currently active on the route or if the
-    request fails.
-
+    an empty list if no vehicles are currently active on the route, or None
+    if the request fails.
     Args:
         route_id: MTA route identifier (e.g., 'MTA NYCT_Q27').
         api_key: MTA BusTime API key.
@@ -56,8 +55,8 @@ def fetch_vehicle_positions(
 
     Returns:
         List of raw vehicle activity dicts from SIRI VehicleActivity array.
-        Returns an empty list if no vehicles are active on the route or if the
-        request fails.
+	Returns an empty list if no vehicles are active on the route, or None
+        if the request fails.
 
     Example:
         >>> with requests.Session() as session:
@@ -92,8 +91,8 @@ def fetch_vehicle_positions(
         return None
 
 def parse_vehicle_positions(
-          route_id: str,
-          vehicles: list[dict]
+        route_id: str,
+        vehicles: list[dict]
 ) -> list[dict]:
     """
     Parse vehicle location data for a single bus route.
@@ -137,8 +136,8 @@ def parse_vehicle_positions(
     return records
 
 def insert_vehicle_positions(
-          rows: list[dict],
-          client: bigquery.Client
+        rows: list[dict],
+        client: bigquery.Client
 ) -> int:
     """
     Insert parsed vehicle position records into the vehicle_positions BigQuery table.
@@ -159,15 +158,15 @@ def insert_vehicle_positions(
     """
     
     if not rows:
-         return 0
+        return 0
     
     errors = client.insert_rows_json(VEHICLE_POSITIONS_TABLE, rows)
     if errors:
-         logger.warning(f"BigQuery insert errors: {errors}")
-         return len(errors)
+        logger.warning(f"BigQuery insert errors: {errors}")
+        return len(errors)
     else:
-         logger.info(f"Inserted {len(rows)} rows into {VEHICLE_POSITIONS_TABLE}")
-         return 0
+        logger.info(f"Inserted {len(rows)} rows into {VEHICLE_POSITIONS_TABLE}")
+        return 0
 
 def log_collection_sweep(
     swept_at: datetime,
@@ -210,9 +209,9 @@ def log_collection_sweep(
 
     errors = client.insert_rows_json(COLLECTION_LOG_TABLE, log_record)
     if errors:
-         logger.warning(f"BigQuery insert errors: {errors}")
+        logger.warning(f"BigQuery insert errors: {errors}")
     else:
-         logger.info(f"Inserted record at {swept_at} into {COLLECTION_LOG_TABLE}")
+        logger.info(f"Inserted record at {swept_at} into {COLLECTION_LOG_TABLE}")
 
 if __name__ == "__main__":
     if not MTA_API_KEY:
