@@ -211,3 +211,5 @@ app/.streamlit/secrets.toml
 
 # Project-specific
 data/raw/
+data/derived/
+.claude/
