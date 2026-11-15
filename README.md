@@ -130,7 +130,9 @@ See `requirements.txt`. Key packages: <!-- TODO: Fill in later, once key package
 * The map starts with proximity to essential services; service quality layers are added as they are completed.
 
 ## Credits
-Data collection and analysis by Deval Mehta. Claude (Anthropic) served as a Socratic guide throughout the build — explaining concepts, asking questions, and letting me write the code.  Real-time and static bus data from the [MTA BusTime API](https://bustime.mta.info/wiki/Developers/Index). Geographic boundary data from [NYC Open Data](https://opendata.cityofnewyork.us/).
+I'm responsible for the research question, methodology, every design decision, and the code written in guided sessions, where Claude (Anthropic) served as a Socratic guide. Claude Code carried out agentic tasks (data downloads, health checks, service snapshots, documentation structure) under my direction; I reviewed and approved every change before committing. See `CLAUDE.md` for how agentic work is scoped and reviewed.
+
+Real-time bus data from the [MTA BusTime API](https://bustime.mta.info/wiki/Developers/Index); schedule data from MTA GTFS feeds; geographic and essential service data from [NYC Open Data](https://opendata.cityofnewyork.us/) and the other sources listed in [Data Sources & Schema](#data-sources--schema).
 
 ## License
 MIT License. See `LICENSE` for details.
