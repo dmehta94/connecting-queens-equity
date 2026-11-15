@@ -12,6 +12,13 @@ scheduled stop time in the window on that date.
 A stop time counts unless pickup_type is 1 (no pickup). The last stop of a trip
 counts too, so terminals where buses arrive and lay over are treated as served.
 
+Departures are also split by route class. Express routes are the QM routes
+(route_id starts with "QM"; these are exactly the routes with MTA's express
+color 00933C). Every other route, including Select Bus Service (Q44+, Q52+,
+Q53+, Q70+) and Limited and Rush routes, counts as local. Express service
+stays in the project for service quality, but proximity uses local service
+only. The "any service" columns count both classes.
+
 Writes a local CSV only; nothing is written to BigQuery.
 
 Usage:
@@ -38,6 +45,7 @@ DAY_COLUMNS = ["monday", "tuesday", "wednesday", "thursday", "friday",
                "saturday", "sunday"]
 WINDOW_START_HOUR = 10
 WINDOW_END_HOUR = 14
+EXPRESS_PREFIX = "QM"
 
 
 def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
@@ -55,6 +63,23 @@ def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
 
     with zf.open(name) as f:
         return pd.read_csv(f, dtype=str, encoding="utf-8-sig", **kwargs)
+
+
+def is_express(route_ids: pd.Series) -> pd.Series:
+    """
+    Flag express routes by route_id.
+
+    Express routes are the QM routes. SBS (for example Q44+), Limited, and Rush
+    routes are local.
+
+    Args:
+        route_ids: Series of GTFS route_id strings.
+
+    Returns:
+        pd.Series: True where the route is express.
+    """
+
+    return route_ids.str.startswith(EXPRESS_PREFIX)
 
 
 def active_service_ids(
@@ -119,7 +144,9 @@ def feed_departures(zip_path: Path, dates: dict) -> pd.DataFrame:
 
     Returns:
         pd.DataFrame: One row per stop_id served by the 122 Queens routes in this
-        feed, with one departure-count column per snapshot (0 when none).
+        feed, with departure-count columns per snapshot (0 when none):
+        {name}_departures (all routes), {name}_local_departures, and
+        {name}_express_departures.
     """
 
     with zipfile.ZipFile(zip_path) as zf:
@@ -138,7 +165,8 @@ def feed_departures(zip_path: Path, dates: dict) -> pd.DataFrame:
 
     stop_times["boardable"] = stop_times["pickup_type"].fillna("0") != "1"
     stop_times["departure_seconds"] = _seconds(stop_times["departure_time"])
-    stop_times = stop_times.merge(trips[["trip_id", "service_id"]], on="trip_id")
+    stop_times = stop_times.merge(trips[["trip_id", "service_id", "route_id"]], on="trip_id")
+    stop_times["express"] = is_express(stop_times["route_id"])
 
     window_start = WINDOW_START_HOUR * 3600
     window_end = WINDOW_END_HOUR * 3600
@@ -151,12 +179,16 @@ def feed_departures(zip_path: Path, dates: dict) -> pd.DataFrame:
     result = pd.DataFrame({"stop_id": stop_times["stop_id"].unique()})
     for name, service_date in dates.items():
         services = active_service_ids(calendar, calendar_dates, service_date)
-        counts = (
-            stop_times[in_window & stop_times["service_id"].isin(services)]
-            .groupby("stop_id").size().rename(f"{name}_departures")
-        )
-        result = result.merge(counts, on="stop_id", how="left")
-        result[f"{name}_departures"] = result[f"{name}_departures"].fillna(0).astype(int)
+        scheduled = in_window & stop_times["service_id"].isin(services)
+        classes = {
+            f"{name}_departures": scheduled,
+            f"{name}_local_departures": scheduled & ~stop_times["express"],
+            f"{name}_express_departures": scheduled & stop_times["express"],
+        }
+        for column, mask in classes.items():
+            counts = stop_times[mask].groupby("stop_id").size().rename(column)
+            result = result.merge(counts, on="stop_id", how="left")
+            result[column] = result[column].fillna(0).astype(int)
         print(f"  {name} {service_date}: {len(services)} service_ids active")
 
     return result
@@ -186,8 +218,9 @@ def main() -> None:
     combined = pd.concat(frames, ignore_index=True)
     # A stop id could appear in both feeds; sum its departures.
     snapshots = combined.groupby("stop_id", as_index=False).sum()
-    snapshots["weekday_service"] = snapshots["weekday_departures"] > 0
-    snapshots["sunday_service"] = snapshots["sunday_departures"] > 0
+    for name in dates:
+        for prefix in [name, f"{name}_local", f"{name}_express"]:
+            snapshots[f"{prefix}_service"] = snapshots[f"{prefix}_departures"] > 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     snapshots.to_csv(OUTPUT, index=False)
@@ -197,6 +230,13 @@ def main() -> None:
     print(f"  sunday midday service:  {int(snapshots['sunday_service'].sum())}")
     print(f"  both: {int((snapshots['weekday_service'] & snapshots['sunday_service']).sum())}")
     print(f"  neither: {int((~snapshots['weekday_service'] & ~snapshots['sunday_service']).sum())}")
+    for name in dates:
+        local = snapshots[f"{name}_local_service"]
+        express = snapshots[f"{name}_express_service"]
+        print(f"\n  {name} local service:   {int(local.sum())}")
+        print(f"  {name} express service: {int(express.sum())}")
+        print(f"  {name} express only:    {int((express & ~local).sum())}")
+        print(f"  {name} local and express: {int((express & local).sum())}")
 
 
 if __name__ == "__main__":
