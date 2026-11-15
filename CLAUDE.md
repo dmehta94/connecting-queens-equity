@@ -89,5 +89,3 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 
 ## Open issues
 - `parse_errors` in `collection_log` is initialized but never incremented.
-- "Amenity" remains in `schemas/proximity_scores.json`.
-- Subway GTFS still needed for the connectivity graph.
