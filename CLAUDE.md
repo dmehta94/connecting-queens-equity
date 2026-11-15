@@ -1,7 +1,7 @@
 # Connecting Queens: Equity in Transit & Access (v2)
 
 ## What this project is
-A transit equity analysis of the Queens bus network, rooted in Dev's experience growing up in Bellerose, Eastern Queens. v2 is a GCP-native rebuild of his GA capstone (v1 repo: dmehta94/project-capstone-transit-inequity-eastern-queens). The near-term goal is an NYC Open Data Week 2027 workshop proposal, due Dec 6, 2026 (Dev's target: submit Nov 20).
+A transit equity analysis of the Queens bus network, rooted in Dev's experience growing up in Bellerose, Eastern Queens. v2 is a GCP-native rebuild of his GA capstone (v1 repo: dmehta94/project-capstone-transit-inequity-eastern-queens). The near-term goal is an NYC Open Data Week 2027 workshop proposal, due Dec 6, 2026 (Dev's target: submit Sat Nov 21, 2026).
 
 Research question: Which bus stops have the worst combined physical access to essential services and the lowest service quality, and are those stops disproportionately located in transit-dependent communities?
 
@@ -18,9 +18,11 @@ Agentic (Claude writes, Dev reviews and approves):
 - Missing service (scheduled vs. observed), reusing Dev's schedule-matching code from excess wait time
 - Library data refresh and the venue reachability score
 - Dataset list with URLs for the proposal form
+- Specialty-store food-group tag draft (from SNAP store names, for Dev's review)
+- NYC Walks download
 
 Guided (Dev writes; do not implement):
-- Proximity (buffers, spatial joins, CRS handling)
+- Proximity (network walk distance on NYC Walks, spatial joins, CRS handling)
 - EDA and excess wait time, including how buses are matched to the schedule
 - Equity overlay by NTA
 - Connectivity graph and community detection (HDBSCAN, Leiden vs. Louvain)
@@ -71,14 +73,22 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 - Bus Time's optional `Occupancy` field (full / seatsAvailable / standingAvailable) is currently dropped by the parser. Rows before the fix will have it null.
 - Static sources in `data/raw/`, named `{source}_{descriptor}_{asof_YYYY}.{ext}`, never modified after pull. Read directly at analysis time; only derived outputs go to BigQuery.
 - Library data is from Sept 2018 (NYC Open Data `kh3d-xhq7`).
-- Only the April 2026 GTFS is saved. Always match observations against the schedule in effect at that time.
+- Saved GTFS in `data/raw/`: the April 2026 folders (`gtfs_q/`, `gtfs_busco/`; untouched), the current Queens and MTA Bus Co bus feeds (valid Oct 12, 2026 to Jan 2, 2027), and the regular subway feed (valid Nov 1, 2026 to May 15, 2027). Always match observations against the schedule in effect at that time.
+- `scripts/service_snapshots.py` writes `data/derived/service_snapshots_2026.csv` (gitignored).
+- NYC Walks pedestrian network (Sevtsuk et al., Nature Cities 2026) has no license yet. Use it for analysis only; never commit or redistribute it (`data/raw/` stays gitignored).
 
 ## Locked methodology
-- Service quality: excess wait time (actual vs. scheduled gaps), missing service (scheduled vs. observed buses), and crowding (Occupancy, Oct 2026 onward).
-- Final reported numbers use one shared window from Oct 2026 onward. April–Oct 2026 data is only for building and testing methods.
+- Service quality: excess wait time (actual vs. scheduled gaps), missing service (scheduled vs. observed buses), and crowding (Occupancy, from the Occupancy deploy onward; see the analysis window below).
+- Final reported numbers use one shared window. Its start date is an open decision: "Oct 2026 onward" can't hold as written, because no saved GTFS covers Oct 1 to 11, 2026, and crowding data starts at the Occupancy deploy. Earlier data is only for building and testing methods.
 - Transit dependency: households with fewer vehicles than household members (ACS B08201), weighted by housing cost burden for renters (B25070) and owners (B25091; medians in B25092). Commute mode (B08301) is a validation check only. No separate student component.
 - Proximity is time-aware, with two snapshots: weekday midday and Sunday. A stop counts only if it has scheduled service in that snapshot.
-- Essential service layers: six, grounded in UDHR articles, weighted from Neutens 2015 and Grengs 2010.
+  - Scored stops: inside the Queens boundary only (borough boundaries, NYC Open Data `gthc-hcne`). Out-of-borough express stops are excluded.
+  - "Near" means a five-minute walk at 4.0 ft/s, about 366 m, measured along the NYC Walks pedestrian network, not straight-line. Crosswalk-only routing is deliberate.
+  - Border handling: essential service locations are pre-filtered to within 366 m straight-line of any scored stop, not to the Queens boundary.
+  - Work in EPSG:6538.
+- Essential service layers: grounded in UDHR articles.
+  - Food is a scored layer (USDA SNAP retailers, `data/raw/usda_snap_retailers_2026.geojson`, scored against Harvard's Healthy Eating Plate) plus an unscored context layer (fast food and bodegas).
+  - Cross-layer weights are unsettled, and the citations need checking before they're used. The pre-proposal output is per-layer access only, with no composite.
 - Public-facing geography: NTAs, all of Queens.
 - Connectivity graph: Queens bus routes plus subway links within Queens only. No LIRR, no subway outside Queens. Community definitions use only spatial and network structure, never outcome variables.
 
