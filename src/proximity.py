@@ -13,6 +13,8 @@ FEEDS = {
 BOROUGH_BOUNDARIES = ROOT / "data" / "raw" / "nyc_borough_boundaries_2024.geojson"
 MAX_STOP_GAP_M = 37 # feeds' gap for one stop above which the midpoint could be >5% of the 366 m radius off.
 
+SNAP_RETAILERS = ROOT / "data" / "raw" / "usda_snap_retailers_2026.geojson"
+
 
 def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
     """
@@ -86,3 +88,22 @@ def load_queens_stops() -> gpd.GeoDataFrame:
     )
 
     return stops_out
+
+def load_candidate_snap_retailers(stops: gpd.GeoDataFrame, radius_m: float = 366) -> gpd.GeoDataFrame:
+    """
+    Create a buffer of the prescribed radius around each deduplicated bus stop, take the union of those buffers,
+    filter all NY SNAP retailers within that union, and return the resulting GeoDataFrame of candidate SNAP retailers.
+
+    Args:
+        stops (gpd.GeoDataFrame): Deduplicated bus stops.
+        radius_m (float): Radius of the buffer in meters (default: 366).
+
+    Returns:
+        gpd.GeoDataFrame: Candidate SNAP retailers within the union of the bus stop buffers, in EPSG:6538.
+    """
+
+    snap_gdf = gpd.read_file(SNAP_RETAILERS).to_crs("EPSG:6538")
+    inclusion_zone = stops.buffer(radius_m).union_all()
+    candidate_snap_gdf = snap_gdf[snap_gdf.within(inclusion_zone)].copy()
+
+    return candidate_snap_gdf
