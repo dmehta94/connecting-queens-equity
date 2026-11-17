@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Connecting Queens</title>
+  <meta name="description" content="Bus stop service and access to essential services across Queens neighborhoods.">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="map" aria-label="Map of Queens neighborhoods and bus stops"></div>
+
+  <aside id="panel">
+    <h1>Connecting Queens</h1>
+
+    <label for="nta-picker" class="field-label">Neighborhood (NTA)</label>
+    <select id="nta-picker">
+      <option value="">All of Queens</option>
+    </select>
+
+    <fieldset class="toggle" aria-label="Service snapshot">
+      <input type="radio" name="snapshot" id="snap-weekday" value="weekday" checked>
+      <label for="snap-weekday">Weekday midday</label>
+      <input type="radio" name="snapshot" id="snap-sunday" value="sunday">
+      <label for="snap-sunday">Sunday midday</label>
+    </fieldset>
+
+    <p id="summary" aria-live="polite">Loading…</p>
+
+    <ul class="legend">
+      <li><span class="dot served"></span> Scheduled local bus service, 10 AM to 2 PM</li>
+      <li><span class="dot unserved"></span> No scheduled local service in this snapshot</li>
+    </ul>
+
+    <p class="placeholder">Walking access to essential services: coming soon.</p>
+  </aside>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
