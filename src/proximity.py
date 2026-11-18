@@ -15,6 +15,10 @@ MAX_STOP_GAP_M = 37 # feeds' gap for one stop above which the midpoint could be 
 
 SNAP_RETAILERS = ROOT / "data" / "raw" / "usda_snap_retailers_2026.geojson"
 
+PHARMACY_PATTERN = r"pharmacy|cvs|walgreen|rite aid|duane reade|farmacia|drug|chemist|\brx\b"
+DOLLAR_STORE_PATTERN = r"dollar|99 ?cent"
+CONVENIENCE_PATTERN = r"\bdeli\b|mini ?mart|convenience"
+
 
 def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
     """
