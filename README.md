@@ -98,7 +98,7 @@ Real-time vehicle position data is cloud operated:
 | USDA SNAP Retailer Locator | TODO | Not yet pulled | Planned |
 | NYC Farmers Markets (NYC Open Data `8vwk-6iz2`) | TODO | Not yet pulled | Planned |
 | NY State Farmers' Markets (data.ny.gov `qq4h-8p86`) | TODO | Not yet pulled | Planned |
-| NYC Walks pedestrian network (Sevtsuk et al., *Nature Cities*, 2026) | TODO | Not yet pulled | Planned |
+| NYC Walks pedestrian network: Sevtsuk, A., Basu, R., Liu, L., Alhassan, A., & Kollar, J. (2026). Spatial distribution of foot traffic in New York City and applications for urban planning. *Nature Cities*, 3, 136–145. [doi:10.1038/s44284-025-00383-y](https://doi.org/10.1038/s44284-025-00383-y). Used by permission of the authors, with credit to the paper; not redistributed in this repo. | GeoJSON | 2026 | In use |
 | USDA Food Access Atlas | XLSX | Jan 5, 2025 | Validation only |
 | ACS variables + TIGER/Line census tracts | SHP | 2022 | In use |
 | HUD AMI thresholds | XLSX | FY2025 | TODO |
