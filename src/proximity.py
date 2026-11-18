@@ -93,10 +93,33 @@ def load_queens_stops() -> gpd.GeoDataFrame:
 
     return stops_out
 
+def filter_to_stop_zone(places: gpd.GeoDataFrame, stops: gpd.GeoDataFrame, radius_m: float = 366) -> gpd.GeoDataFrame:
+    """
+    Converts both the places and stops to EPSG:6538, creates a buffer of the
+    prescribed radius around each deduplicated bus stop, takes the union of
+    those buffers, filters all places within that union, and returns the
+    resulting GeoDataFrame of places within the union of the bus stop buffers.
+
+    Args:
+        places (gpd.GeoDataFrame): Places to filter.
+        stops (gpd.GeoDataFrame): Deduplicated bus stops.
+        radius_m (float): Radius of the buffer in meters (default: 366).
+
+    Returns:
+        gpd.GeoDataFrame: Places within the union of the bus stop buffers, in EPSG:6538.
+    """
+
+    places = places.to_crs("EPSG:6538")
+    stops = stops.to_crs("EPSG:6538")
+    inclusion_zone = stops.buffer(radius_m).union_all()
+    filtered_places = places[places.within(inclusion_zone)].copy()
+
+    return filtered_places
+
 def load_candidate_snap_retailers(stops: gpd.GeoDataFrame, radius_m: float = 366) -> gpd.GeoDataFrame:
     """
-    Create a buffer of the prescribed radius around each deduplicated bus stop, take the union of those buffers,
-    filter all NY SNAP retailers within that union, and return the resulting GeoDataFrame of candidate SNAP retailers.
+    Read all NY SNAP retailers and keep those within radius_m (straight line) of
+    any bus stop, using filter_to_stop_zone().
 
     Args:
         stops (gpd.GeoDataFrame): Deduplicated bus stops.
@@ -106,8 +129,7 @@ def load_candidate_snap_retailers(stops: gpd.GeoDataFrame, radius_m: float = 366
         gpd.GeoDataFrame: Candidate SNAP retailers within the union of the bus stop buffers, in EPSG:6538.
     """
 
-    snap_gdf = gpd.read_file(SNAP_RETAILERS).to_crs("EPSG:6538")
-    inclusion_zone = stops.buffer(radius_m).union_all()
-    candidate_snap_gdf = snap_gdf[snap_gdf.within(inclusion_zone)].copy()
+    snap_gdf = gpd.read_file(SNAP_RETAILERS)
+    candidate_snap_gdf = filter_to_stop_zone(snap_gdf, stops, radius_m=radius_m)
 
     return candidate_snap_gdf
