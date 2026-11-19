@@ -1,8 +1,12 @@
-from pathlib import Path
-import pandas as pd
-import geopandas as gpd
-import zipfile
 import warnings
+import zipfile
+from pathlib import Path
+
+import geopandas as gpd
+import numpy as np
+import networkx as nx
+import pandas as pd
+import shapely
 
 #Constants
 ROOT = Path(__file__).parent.parent
@@ -18,6 +22,9 @@ SNAP_RETAILERS = ROOT / "data" / "raw" / "usda_snap_retailers_2026.geojson"
 PHARMACY_PATTERN = r"pharmacy|cvs|walgreen|rite aid|duane reade|farmacia|drug|chemist|\brx\b"
 DOLLAR_STORE_PATTERN = r"dollar|99 ?cent"
 CONVENIENCE_PATTERN = r"\bdeli\b|mini ?mart|convenience"
+
+NETWORK_ZIP = ROOT / "data" / "raw" / "nycwalks_pedestrian_network_2026.zip"
+NETWORK_LAYER = "NYC_pednetwork_estimates_counts_2018-2019.geojson"
 
 
 def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
@@ -133,3 +140,52 @@ def load_candidate_snap_retailers(stops: gpd.GeoDataFrame, radius_m: float = 366
     candidate_snap_gdf = filter_to_stop_zone(snap_gdf, stops, radius_m=radius_m)
 
     return candidate_snap_gdf
+
+def load_pedestrian_graph() -> tuple[nx.Graph, gpd.GeoDataFrame]:
+    """
+    Load the NYC Walks pedestrian network as a graph for walking distances.
+
+    Read the GeoJSON from the NYC Walks zip at NETWORK_ZIP (GUID and geometry
+    only), ensure that the CRS is EPSG:6538 by converting if necessary, build
+    the segment table, give each node an integer ID, drop self-loops, keep the
+    shortest of each parallel pair, and build a network graph.
+
+    Returns:
+        nx.Graph: A graph of the network with edges (length in m, GUID)
+        gpd.GeoDataFrame: A GeoDataFrame of the graph's nodes, indexed by
+            node ID, point geometry in EPSG:6538
+    """
+    network = gpd.read_file(f"zip://{NETWORK_ZIP}!{NETWORK_LAYER}", columns=["__GUID"]).to_crs("EPSG:6538")
+
+    starts = shapely.get_point(network.geometry.values, 0)
+    ends = shapely.get_point(network.geometry.values, -1)
+
+    segments = pd.DataFrame({
+        "start_x": shapely.get_x(starts),
+        "start_y": shapely.get_y(starts),
+        "end_x": shapely.get_x(ends),
+        "end_y": shapely.get_y(ends),
+        "length": network.length.to_numpy(),
+        "guid": network["__GUID"].to_numpy()
+    })
+
+    all_xs = np.concatenate([segments["start_x"], segments["end_x"]])
+    all_ys = np.concatenate([segments["start_y"], segments["end_y"]])
+
+    codes, uniques = pd.factorize(pd.MultiIndex.from_arrays([all_xs, all_ys]))
+
+    n = len(segments)
+    segments["u"] = codes[:n]
+    segments["v"] = codes[n:]
+    segments["lo"] = np.minimum(segments["u"], segments["v"])
+    segments["hi"] = np.maximum(segments["u"], segments["v"])
+
+    segments = segments[segments["u"] != segments["v"]].sort_values("length").drop_duplicates(subset=["lo", "hi"])
+
+    G = nx.from_pandas_edgelist(segments, source="u", target="v", edge_attr=["length", "guid"])
+
+    nodes = gpd.GeoDataFrame(
+        geometry=gpd.points_from_xy(uniques.get_level_values(0), uniques.get_level_values(1)), crs="EPSG:6538"
+    )
+
+    return G, nodes
