@@ -134,6 +134,17 @@ select {
   font-style: italic;
 }
 
+.credits {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.credits a { color: var(--accent); }
+
 /* Phones: panel becomes a bottom sheet so the map keeps the top of the screen. */
 @media (max-width: 600px) {
   #panel {
