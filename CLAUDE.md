@@ -69,13 +69,13 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 ## Data
 - 122 Queens routes (MTA's headline 124 double-counts two variants). 8 shuttles excluded: Q92, Q93, Q96, Q97, Q107, Q108, Q109, Q121.
 - SIRI LineRef formats: `MTA NYCT_Q44%2B` (NYCT), `MTABC_Q06` (MTABC; leading zeros preserved).
-- BigQuery tables: `routes` (122), `stops` (3,250; 2,973 in Queens), `stop_routes` (5,332), `vehicle_positions` (partitioned on `collected_at`, clustered on `route_id`; includes `direction_ref`, `next_stop_ref`, `bearing`), `tract_nta` (junction; tracts are not assigned to a single NTA), `proximity_scores`, `census_tracts`, `collection_log`.
+- BigQuery tables: `routes` (122), `stops` (3,250; 2,973 in Queens), `stop_routes` (5,332), `vehicle_positions` (partitioned on `collected_at`, clustered on `route_id`; includes `direction_ref`, `next_stop_ref`, `bearing`), `tract_nta` (junction; for 2020 geographies each tract maps to exactly one NTA, since DCP built the 2020 NTAs from whole tracts), `proximity_scores`, `census_tracts`, `collection_log`.
 - Bus Time's optional `Occupancy` field (full / seatsAvailable / standingAvailable) is currently dropped by the parser. Rows before the fix will have it null.
 - Static sources in `data/raw/`, named `{source}_{descriptor}_{asof_YYYY}.{ext}`, never modified after pull. Read directly at analysis time; only derived outputs go to BigQuery.
 - Library data is from Sept 2018 (NYC Open Data `kh3d-xhq7`).
 - Saved GTFS in `data/raw/`: the April 2026 folders (`gtfs_q/`, `gtfs_busco/`; untouched), the current Queens and MTA Bus Co bus feeds (valid Oct 12, 2026 to Jan 2, 2027), and the regular subway feed (valid Nov 1, 2026 to May 15, 2027). Always match observations against the schedule in effect at that time.
 - `scripts/service_snapshots.py` writes `data/derived/service_snapshots_2026.csv` (gitignored).
-- NYC Walks pedestrian network (Sevtsuk et al., Nature Cities 2026) has no license yet. Use it for analysis only; never commit or redistribute it (`data/raw/` stays gitignored).
+- NYC Walks pedestrian network (Sevtsuk et al., Nature Cities 2026): used by permission of Andres Sevtsuk (Nov 16, 2026), on the condition that the Nature Cities paper is cited and credited. Derived results (such as per-stop proximity scores) may be published with visible credit. The network itself is never committed or redistributed (`data/raw/` stays gitignored).
 
 ## Locked methodology
 - Service quality: excess wait time (actual vs. scheduled gaps), missing service (scheduled vs. observed buses), and crowding (Occupancy, from the Occupancy deploy onward; see the analysis window below).
@@ -96,6 +96,7 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 - One screen, two or three controls: NTA picker and a weekday/Sunday toggle.
 - Works on phones, venue Wi-Fi, or a video call, with no login. Precomputed and static, not a live BigQuery connection.
 - Starts with proximity; service-quality layers are added as they are completed.
+- Leaflet loads from cdnjs with SRI hashes in `map/index.html`. Upgrading Leaflet means updating both `integrity` hashes, or the map won't load.
 
 ## Branding for public-facing assets
 Applies to anything a reader outside the project sees: the map, README images, slides, the task card.

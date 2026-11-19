@@ -115,10 +115,13 @@ with tab5:
     )
 
     st.caption(
-        "Base layer: transit-dependent census tracts (always visible). "
+        "Base layer: census tracts shaded by vehicle deficit share "
+        "(households with fewer vehicles than members; always visible). "
+        "Renter and owner housing cost burden shares are stored separately; "
+        "there is no composite transit dependency score yet. "
         "Stop markers colored by composite proximity score. "
         "Tighten the threshold to highlight stops that are both low-access "
-        "and inside transit-dependent tracts."
+        "and inside tracts with high vehicle deficit shares."
     )
 
     # TODO: replace with Folium map wired to BigQuery — census_tracts + proximity_scores
