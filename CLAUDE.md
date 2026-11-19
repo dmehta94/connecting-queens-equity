@@ -97,5 +97,13 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 - Works on phones, venue Wi-Fi, or a video call, with no login. Precomputed and static, not a live BigQuery connection.
 - Starts with proximity; service-quality layers are added as they are completed.
 
+## Branding for public-facing assets
+Applies to anything a reader outside the project sees: the map, README images, slides, the task card.
+- Palette: plum `#3E1A5C` (primary: links, key accents), civic green `#2A5C3F` (secondary), garnet `#7B2236` (accent, sparingly), ink `#1C1C1A` (text), parchment `#F4EFE6` (background). Support tints: plum-mid `#7B4FA0`, green-mid `#4A8A64`, sand `#B0A090` (labels, secondary text).
+- Type: EB Garamond 500 for headings; Barlow 300/400/600 for body and UI, body about 15px at 1.65 line-height. Labels are uppercase small caps, 10–12px, letter-spacing 0.12–0.2em, in sand.
+- Mark (if used): three nodes on a triangle, 100x100 viewBox, vertices (50,14), (80,67), (20,67). Edges plum-mid, stroke 2.2, round caps. Nodes r=5.5: apex plum, right civic green, left garnet. Never stretch or rotate it; under 16px, use text only.
+- Brand colors go on the page itself (header, text, background, links, controls). Data colors on maps and charts follow data visualization needs: an ordered single-hue scale for shares, colorblind-safe, legible on parchment. Brand hues may anchor those scales but never override legibility.
+- Learnability and phone use come first: branding never adds controls or clutter to the map.
+
 ## Open issues
 - `parse_errors` in `collection_log` is initialized but never incremented.
