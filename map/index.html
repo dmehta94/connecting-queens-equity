@@ -4,12 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Connecting Queens</title>
-  <meta name="description" content="Bus stop service and access to essential services across Queens neighborhoods.">
+  <meta name="description" content="Bus stop service, transit dependency, and access to essential services across Queens neighborhoods.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600&family=EB+Garamond:wght@500&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="map" aria-label="Map of Queens neighborhoods and bus stops"></div>
+  <div id="map" aria-label="Map of Queens neighborhoods, census tracts, and bus stops"></div>
 
   <aside id="panel">
     <h1>Connecting Queens</h1>
@@ -19,24 +22,56 @@
       <option value="">All of Queens</option>
     </select>
 
-    <fieldset class="toggle" aria-label="Service snapshot">
-      <input type="radio" name="snapshot" id="snap-weekday" value="weekday" checked>
-      <label for="snap-weekday">Weekday midday</label>
-      <input type="radio" name="snapshot" id="snap-sunday" value="sunday">
-      <label for="snap-sunday">Sunday midday</label>
+    <section class="figures" aria-live="polite">
+      <h2 id="figures-place">All of Queens</h2>
+      <dl>
+        <div class="figure">
+          <dt>Short on cars</dt>
+          <dd><span class="value" id="fig-cars">…</span> <span class="detail" id="fig-cars-detail"></span></dd>
+        </div>
+        <div class="figure">
+          <dt>Housing cost burden</dt>
+          <dd><span class="value" id="fig-burden">…</span> <span class="detail" id="fig-burden-detail"></span></dd>
+        </div>
+      </dl>
+    </section>
+
+    <fieldset class="toggle" aria-label="Shade census tracts by">
+      <input type="radio" name="measure" id="measure-cars" value="cars" checked>
+      <label for="measure-cars">Short on cars</label>
+      <input type="radio" name="measure" id="measure-burden" value="burden">
+      <label for="measure-burden">Housing cost burden</label>
     </fieldset>
 
-    <p id="summary" aria-live="polite">Loading…</p>
+    <div class="tract-legend">
+      <p class="legend-title" id="legend-title"></p>
+      <ul class="ramp" id="ramp" aria-label="Color key for census tracts"></ul>
+      <p class="legend-nodata"><span class="swatch nodata"></span> No data: no households (parks, cemeteries, airports, industrial land)</p>
+      <p class="legend-note" id="cars-note">This counts households with fewer vehicles than members, and members include children.</p>
+    </div>
 
-    <ul class="legend">
-      <li><span class="dot served"></span> Scheduled local bus service, 10 AM to 2 PM</li>
-      <li><span class="dot unserved"></span> No scheduled local service in this snapshot</li>
-    </ul>
+    <div class="section">
+      <span class="field-label">Bus service</span>
+      <fieldset class="toggle" aria-label="Service snapshot">
+        <input type="radio" name="snapshot" id="snap-weekday" value="weekday" checked>
+        <label for="snap-weekday">Weekday midday</label>
+        <input type="radio" name="snapshot" id="snap-sunday" value="sunday">
+        <label for="snap-sunday">Sunday midday</label>
+      </fieldset>
+
+      <p id="summary" aria-live="polite">Loading…</p>
+
+      <ul class="legend">
+        <li><span class="dot served"></span> Scheduled local bus service, 10 AM to 2 PM</li>
+        <li><span class="dot unserved"></span> No scheduled local service in this snapshot</li>
+      </ul>
+    </div>
 
     <p class="placeholder">Walking access to essential services: coming soon.</p>
 
     <p class="credits">
-      Data: <a href="https://opendata.cityofnewyork.us/">NYC Open Data</a> and <a href="https://www.mta.info/developers">MTA</a>.
+      Data: <a href="https://opendata.cityofnewyork.us/">NYC Open Data</a>, <a href="https://www.mta.info/developers">MTA</a>,
+      and U.S. Census Bureau (<a href="https://www.census.gov/programs-surveys/acs">ACS 2020–2024 5-year estimates</a>; 2020 TIGER/Line tracts).
       NYC Walks pedestrian network: Sevtsuk, A., Basu, R., Liu, L., Alhassan, A., &amp; Kollar, J. (2026).
       Spatial distribution of foot traffic in New York City and applications for urban planning.
       <cite>Nature Cities</cite>, 3, 136–145.
@@ -45,6 +80,6 @@
   </aside>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=2026-11-19-a303e5"></script>
 </body>
 </html>

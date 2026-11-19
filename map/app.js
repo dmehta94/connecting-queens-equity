@@ -1,10 +1,38 @@
-// Workshop map scaffold: Queens NTAs, bus stops, NTA picker, weekday/Sunday toggle.
+// Workshop map: Queens NTAs, census tracts, bus stops, NTA picker, two switches
+// (tract shading and weekday/Sunday service).
 // Static: reads precomputed GeoJSON from data/ (built by scripts/build_map_data.py).
+
+// Data version stamped on this script's tag by build_map_data.py; added to data fetches
+// so a rebuild isn't hidden by the browser cache.
+const DATA_VERSION = new URL(document.currentScript.src).searchParams.get("v");
 
 const QUEENS_CENTER = [40.705, -73.82];
 const SNAPSHOT_LABELS = { weekday: "weekday midday", sunday: "Sunday midday" };
 
-const state = { nta: "", snapshot: "weekday" };
+// Tract shading. Ordered single-hue scales (ColorBrewer Purples and Greens, 5 classes),
+// light to dark; a value at a break falls in the higher class.
+const MEASURES = {
+  cars: {
+    field: "vehicle_deficit_share",
+    numerator: "vehicle_deficit_households",
+    denominator: "households",
+    title: "Darker = areas where more households are short on cars",
+    breaks: [0.6, 0.7, 0.8, 0.9],
+    labels: ["Under 60%", "60–70%", "70–80%", "80–90%", "90%+"],
+    colors: ["#f2f0f7", "#cbc9e2", "#9e9ac8", "#756bb1", "#54278f"],
+  },
+  burden: {
+    field: "burden_share",
+    numerator: "burdened_households",
+    denominator: "burden_households",
+    title: "Darker = areas where more households spend 30% or more of income on housing",
+    breaks: [0.3, 0.4, 0.5, 0.6],
+    labels: ["Under 30%", "30–40%", "40–50%", "50–60%", "60%+"],
+    colors: ["#edf8e9", "#bae4b3", "#74c476", "#31a354", "#006d2c"],
+  },
+};
+
+const state = { nta: "", snapshot: "weekday", measure: "cars" };
 
 const map = L.map("map", { preferCanvas: true, zoomControl: true }).setView(QUEENS_CENTER, 11);
 
@@ -17,17 +45,44 @@ const picker = document.getElementById("nta-picker");
 const summary = document.getElementById("summary");
 
 let ntaLayer;
+let tractLayer;
 let stopLayer;
 let stops = [];
+let ntaFeatures = [];
 const ntaNames = {};
+
+function getCss(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function tractColor(value) {
+  const { breaks, colors } = MEASURES[state.measure];
+  let i = 0;
+  while (i < breaks.length && value >= breaks[i]) i += 1;
+  return colors[i];
+}
+
+function tractStyle(feature) {
+  const value = feature.properties[MEASURES[state.measure].field];
+  const inPick = !state.nta || feature.properties.nta2020 === state.nta;
+  const noData = value === null || value === undefined;
+  return {
+    stroke: noData,
+    color: getCss("--sand"),
+    weight: 1,
+    dashArray: "3 3",
+    fillColor: noData ? getCss("--nodata") : tractColor(value),
+    fillOpacity: inPick ? 0.72 : 0.3,
+  };
+}
 
 function ntaStyle(feature) {
   const selected = feature.properties.nta2020 === state.nta;
   return {
-    color: selected ? getCss("--nta-highlight") : "#7b8794",
+    color: getCss("--ink"),
+    opacity: selected ? 1 : 0.45,
     weight: selected ? 3 : 1,
-    fillOpacity: selected ? 0.06 : 0,
-    fillColor: getCss("--nta-highlight"),
+    fillOpacity: 0,
   };
 }
 
@@ -44,8 +99,44 @@ function stopStyle(feature) {
   };
 }
 
-function getCss(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function formatShare(numerator, denominator) {
+  return `${(100 * numerator / denominator).toFixed(1)}%`;
+}
+
+// NTA (or Queens) figures: sum tract counts, then divide. Never average tract shares.
+function updateFigures() {
+  const inArea = state.nta ? ntaFeatures.filter((f) => f.properties.nta2020 === state.nta) : ntaFeatures;
+  document.getElementById("figures-place").textContent = state.nta ? ntaNames[state.nta] : "All of Queens";
+  for (const [key, measure] of Object.entries(MEASURES)) {
+    const num = inArea.reduce((sum, f) => sum + f.properties[measure.numerator], 0);
+    const den = inArea.reduce((sum, f) => sum + f.properties[measure.denominator], 0);
+    const value = document.getElementById(`fig-${key}`);
+    const detail = document.getElementById(`fig-${key}-detail`);
+    if (den === 0) {
+      value.textContent = "No data";
+      detail.textContent = "(no households)";
+    } else {
+      value.textContent = formatShare(num, den);
+      detail.textContent = `(${num.toLocaleString("en-US")} of ${den.toLocaleString("en-US")} households)`;
+    }
+  }
+}
+
+function updateLegend() {
+  const measure = MEASURES[state.measure];
+  document.getElementById("legend-title").textContent = measure.title;
+  const ramp = document.getElementById("ramp");
+  ramp.replaceChildren(...measure.colors.map((color, i) => {
+    const li = document.createElement("li");
+    const swatch = document.createElement("span");
+    swatch.className = "swatch";
+    swatch.style.background = color;
+    const label = document.createElement("span");
+    label.textContent = measure.labels[i];
+    li.append(swatch, label);
+    return li;
+  }));
+  document.getElementById("cars-note").hidden = state.measure !== "cars";
 }
 
 function updateSummary() {
@@ -58,8 +149,11 @@ function updateSummary() {
 }
 
 function render() {
+  if (tractLayer) tractLayer.setStyle(tractStyle);
   if (ntaLayer) ntaLayer.setStyle(ntaStyle);
   if (stopLayer) stopLayer.setStyle(stopStyle);
+  updateFigures();
+  updateLegend();
   updateSummary();
 }
 
@@ -104,18 +198,23 @@ function fillPicker(features) {
 }
 
 async function loadJson(path) {
-  const response = await fetch(path);
+  const response = await fetch(DATA_VERSION ? `${path}?v=${DATA_VERSION}` : path);
   if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
   return response.json();
 }
 
 async function init() {
   try {
-    const [ntaData, stopData] = await Promise.all([
+    const [ntaData, tractData, stopData] = await Promise.all([
       loadJson("data/nta_queens.geojson"),
+      loadJson("data/tracts_queens.geojson"),
       loadJson("data/stops_queens.geojson"),
     ]);
 
+    // Drawn in order: tract shading under NTA outlines under stops.
+    tractLayer = L.geoJSON(tractData, { style: tractStyle, interactive: false }).addTo(map);
+
+    ntaFeatures = ntaData.features;
     ntaLayer = L.geoJSON(ntaData, {
       style: ntaStyle,
       onEachFeature: (feature, layer) => {
@@ -168,4 +267,12 @@ document.querySelectorAll('input[name="snapshot"]').forEach((input) => {
   });
 });
 
+document.querySelectorAll('input[name="measure"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    state.measure = input.value;
+    render();
+  });
+});
+
+updateLegend();
 init();
