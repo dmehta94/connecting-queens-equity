@@ -1,9 +1,21 @@
 [
-  {"name": "tract_id", "type": "STRING", "mode": "NULLABLE", "description": "Census tract GEOID; source: Census TIGER/Line"},
-  {"name": "median_income", "type": "FLOAT64", "mode": "NULLABLE", "description": "Median household income; source: Census API ACS 5-year estimate variable B19013"},
-  {"name": "zero_vehicle_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of households with zero vehicles; source: Census API ACS 5-year estimate variable B08201"},
-  {"name": "housing_cost_burden_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of households spending more than 30% of income on housing; source: Census API ACS 5-year estimate variable B25070"},
-  {"name": "interborough_commute_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Percentage of workers commuting outside Queens; used for Category 5 inter-borough connectivity recommendations; source: Census API ACS 5-year estimate variable B08301"},
-  {"name": "transit_dependent", "type": "BOOL", "mode": "NULLABLE", "description": "Derived flag; true when zero_vehicle_pct is elevated AND median_income < 80% NYC AMI AND housing_cost_burden_pct > 30%; thresholds from affordable housing policy literature; derived in src/equity.py"},
-  {"name": "geometry", "type": "GEOGRAPHY", "mode": "NULLABLE", "description": "Tract polygon geometry in WGS84; used for spatial join onto stop locations; source: Census TIGER/Line"}
+  {"name": "tract_id", "type": "STRING", "mode": "REQUIRED", "description": "Census tract GEOID (11 digits, 2020 tracts); source: Census TIGER/Line 2022"},
+  {"name": "households", "type": "FLOAT64", "mode": "NULLABLE", "description": "Total households, B08201_001; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "households_moe", "type": "FLOAT64", "mode": "NULLABLE", "description": "Margin of error (90%) for households, B08201_001M; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "vehicle_deficit_households", "type": "FLOAT64", "mode": "NULLABLE", "description": "Households with fewer vehicles than members (B08201_008, 014, 015, 020-022, 026-029); 4+-person households with 4+ vehicles counted as not short; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "vehicle_deficit_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "vehicle_deficit_households / households (0-1); null when no households; derived in src/transit_dependency.py"},
+  {"name": "renter_households", "type": "FLOAT64", "mode": "NULLABLE", "description": "Renter households with burden computed, B25070_001 minus B25070_011; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "renter_burdened", "type": "FLOAT64", "mode": "NULLABLE", "description": "Renter households paying 30% or more of income on gross rent, B25070_007-010; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "renter_burden_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "renter_burdened / renter_households (0-1); derived in src/transit_dependency.py"},
+  {"name": "owner_households", "type": "FLOAT64", "mode": "NULLABLE", "description": "Owner households with burden computed, B25091_001 minus B25091_012 and B25091_023; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "owner_burdened", "type": "FLOAT64", "mode": "NULLABLE", "description": "Owner households paying 30% or more of income on owner costs, with mortgage B25091_008-011 and without B25091_019-022; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "owner_burden_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "owner_burdened / owner_households (0-1); derived in src/transit_dependency.py"},
+  {"name": "burden_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "(renter_burdened + owner_burdened) / (renter_households + owner_households), i.e. weighted by tenure (0-1); derived in src/transit_dependency.py"},
+  {"name": "owner_median_burden_pct", "type": "FLOAT64", "mode": "NULLABLE", "description": "Median owner costs as % of income, all owners, B25092_001; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "owner_median_burden_pct_mortgage", "type": "FLOAT64", "mode": "NULLABLE", "description": "Median owner costs as % of income, with mortgage, B25092_002; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "owner_median_burden_pct_no_mortgage", "type": "FLOAT64", "mode": "NULLABLE", "description": "Median owner costs as % of income, without mortgage, B25092_003; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "commute_transit_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "Workers commuting by public transportation, B08301_010 / B08301_001; validation only; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "commute_bus_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "Workers commuting by bus, B08301_011 / B08301_001; validation only; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "commute_walk_share", "type": "FLOAT64", "mode": "NULLABLE", "description": "Workers who walk to work, B08301_019 / B08301_001; validation only; source: Census API ACS 2020-2024 5-year estimates"},
+  {"name": "geometry", "type": "GEOGRAPHY", "mode": "NULLABLE", "description": "Tract polygon in WGS84; source: Census TIGER/Line 2022 (tl_2022_36_tract)"}
 ]
