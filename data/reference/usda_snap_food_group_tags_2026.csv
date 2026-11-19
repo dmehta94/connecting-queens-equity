@@ -1,5 +1,5 @@
 Record_ID,Store_Name,Store_Street_Address,City,Store_Type,proposed_tag,source,note
-1704765,Le Bon Pate Bakery Inc,21547 Jamaica Ave,Queens Village,Specialty Store,bread+protein,https://www.atly.com/location/Le-Bon-Pate-Bakery-Halal-Inc,"Bakery; tagged bread pending the whole-grain vs. refined decision. Listing at 215-47 Jamaica Ave says it is a Haitian bakery known for pate (savory filled pastry), so the bread share is doubtful."
+1704765,Le Bon Pate Bakery Inc,21547 Jamaica Ave,Queens Village,Specialty Store,bread+protein,https://www.atly.com/location/Le-Bon-Pate-Bakery-Halal-Inc,"Haitian bakery known for pate (savory filled pastry), per listing at 215-47 Jamaica Ave; tagged bread+protein. Whole-grain vs. refined bread decision still pending."
 282745,P & M LIVE POULTRY INC,13162 Avery Ave,Flushing,Specialty Store,protein,name,
 242192,Broadway Fish Market Inc,4828 Broadway,Astoria,Specialty Store,protein,name,
 302149,J & C FISH MARKET INC.,131-27 ROCKAWAY BLVD,S OZONE PARK,Specialty Store,protein,name,
@@ -106,27 +106,27 @@ Record_ID,Store_Name,Store_Street_Address,City,Store_Type,proposed_tag,source,no
 1376172,New York Ginseng City Inc,13519 Roosevelt Ave,Flushing,Other,no_plate_food,name,Ginseng shop.
 1102332,Davids Kosher Meat Store Inc,9854 63rd Rd,Rego Park,Other,protein,name,
 1653049,Xiao Mao Market 136-16,13616 41st Ave,Flushing,Other,unknown,,No source found for Xiao Mao Market or 136-16 41st Ave.
-1302921,7955 Ae Company Inc,135-08 Roosevelt Ave,Flushing,Other,context_convenience,"in-person check, Nov 19","Only mention is a corp-name list on a page for Wing Fat Company (7955 Albion Ave, Elmhurst). Nothing at 135-08 Roosevelt Ave."
+1302921,7955 Ae Company Inc,135-08 Roosevelt Ave,Flushing,Other,context_convenience,"in-person check, Nov 19","Confirmed in person Nov 19 (context_convenience). Only online mention is a corp-name list on a page for Wing Fat Company (7955 Albion Ave, Elmhurst)."
 1303413,Lele Highclass Healthy Products USA Inc,4113 Kissena Blvd,Flushing,Other,unknown,,"No source found for Lele Highclass Healthy Products or 41-13 Kissena Blvd. Name suggests supplements (no_plate_food), but unconfirmed."
 1584124,Bo Luo Mi Inc.,4120 Main St,Flushing,Other,unknown,https://www.city-data.com/restaurants/NY/index41.html,Only a city-data inspection-index line for BO LUO MI at 4120 Main St #A1; store type not stated.
 1458338,Jj&max Inc,9406 Sutphin Blvd,Jamaica,Other,full_plate,https://www.atly.com/location/ShopFairSupermarket1,94-06 Sutphin Blvd is Shop Fair Supermarket. Assumes Jj&max Inc is its operating company.
 1386491,Broadway Grocery Store Inc.,8321 Broadway,Elmhurst,Other,full_plate,name,Name says grocery/supermarket; size and produce range not checked.
 1355582,Nba Glatt Market Inc,18502 Union Tpke,Fresh Meadows,Other,protein,https://www.totallyjewishtravel.com/Kosher_Restaurant-TE63830-nba_glatt_market-Reviews-fresh_meadows_queens.html,"Kosher market at 185-02 Union Tpke (VHQ). Glatt is a meat standard, so likely a butcher, but the listing does not detail stock."
-1464085,New York Food And Herbs,13542A Roosevelt Ave,Flushing,Other,no_plate_food,"in-person check, Nov 19","No listing for this name. 135-42 Roosevelt Ave (this record is 135-42A) hosts a ginseng/herbal business; name suggests herbal (no_plate_food), but unconfirmed."
+1464085,New York Food And Herbs,13542A Roosevelt Ave,Flushing,Other,no_plate_food,"in-person check, Nov 19",Confirmed in person Nov 19 (no_plate_food). No online listing under this name; 135-42 Roosevelt Ave (this record is 135-42A) hosts a ginseng/herbal business.
 1465504,African Caribbean Central Market,1918 Mott Ave,Far Rockaway,Other,unknown,,No source found for African Caribbean Central Market or 19-18 Mott Ave.
 1512626,Home Chef Catering 7187495745,23114 Merrick Blvd,Laurelton,Other,no_plate_food,name,Caterer.
 1497539,Pappu Da Dhaba,123-13 Jamaica Ave,Jamaica,Other,no_plate_food,name,A dhaba is a roadside-style restaurant.
 1656354,VMAA Inc.,4003 Queens Blvd,Sunnyside,Other,context_convenience,"in-person check, Nov 19","Liquor store, SNAP-authorized."
 1492774,Food Story Natural Market Ii Inc,1550 Myrtle Ave,Brooklyn,Other,full_plate,https://independent.marketreportblog.com/2019/10/snapshot-food-story-natural-market.html,"Organic neighborhood grocery at 1550-1552 Myrtle Ave, Brooklyn (kept by the border pre-filter)."
 1408376,Flushing 1 Poultry Market Corp,13339 35th Ave,Flushing,Other,protein,name,
-1501705,De Ren Tang 0,4178 Main St,Flushing,Other,no_plate_food,"in-person check, Nov 19","No source found for De Ren Tang or 41-78 Main St. Tang (hall) names are typical of Chinese herbal shops (no_plate_food), but unconfirmed."
+1501705,De Ren Tang 0,4178 Main St,Flushing,Other,no_plate_food,"in-person check, Nov 19",Confirmed in person Nov 19 (no_plate_food). No online source found for De Ren Tang or 41-78 Main St.
 1506132,Broadway Ginseng Inc,8632 Broadway,Elmhurst,Other,no_plate_food,name,Ginseng shop.
 1495471,El Gaucho Meat,9310 Roosevelt Ave,Jackson Heights,Other,protein,name,
 1538448,Meimei 168 Food Inc,4628 Kissena Blvd,Flushing,Other,full_plate,https://www.atly.com/location/MeiMei168Food,Listed as an Asian grocery at 46-28 Kissena Blvd. Thin aggregator listing (mentions pickup orders and fees); flag for review.
 1544428,Shree Siddhivinayka,143-01 Holly Ave,Flushing,Other,full_plate,https://www.atly.com/location/SriSiddiVinayakGroceryStore,Indian grocery at 143-01 Holly Ave (near the Ganesh Temple). Thin aggregator listing.
 896545,Ginseng Empire Inc,4211 Main St,Flushing,Other,no_plate_food,name,Ginseng shop.
 1663250,Sutphin Halal Fresh Meats & Fish Corp,9114 Sutphin Blvd,Jamaica,Other,protein,name,
-1294297,Fuxing Mini Market Inc,4136 Main St,Flushing,Other,context_convenience,"in-person check, Nov 19",Only a city-data inspection-index line at 41-36 Main St. Mini market suggests a convenience store (the mini ?mart regex does not match market); may belong with the convenience group.
+1294297,Fuxing Mini Market Inc,4136 Main St,Flushing,Other,context_convenience,"in-person check, Nov 19",Confirmed in person Nov 19 (context_convenience). Desk research found only a city-data inspection-index line at 41-36 Main St; the mini ?mart regex does not match market.
 1552182,Great Neck Healthy Food Inc,3705 Main St,Flushing,Other,unknown,,No source found for Great Neck Healthy Food or 37-05 Main St.
 1175697,Bayside Milk Farm,3515 Bell Blvd,Bayside,Other,full_plate,https://independent.marketreportblog.com/2020/02/tour-bayside-milk-farm-bayside-ny.html,Krasdale-supplied grocery with deli at 35-15 Bell Blvd (open since 1976).
 1074427,David's Lot Inc dba Belle Harbor Foods,413 Beach 129th St,Rockaway Park,Other,full_plate,https://startpage.mapquest.com/us/new-york/belle-harbor-foods-inc-1525179,"Grocery with produce and a deli counter at 413 Beach 129th St; NAICS lists David's Lot, Inc. as a supermarket at that address."
