@@ -254,3 +254,53 @@ def assign_food_shares(candidates: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
          np.nan)
     candidates_with_shares = candidates_with_shares.drop(columns="proposed_tag")
     return candidates_with_shares
+
+def giant_component_nodes(G: nx.Graph, nodes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Filter all nodes of physical network down to only those in the giant
+    connected component.
+
+    Snapping uses these nodes so every stop and essential service location
+    lands on the four-borough network.
+    
+    Ensure the nodes GDF is in EPSG:6538, then identify the largest connected
+    component of G as a set of node IDs, and keep the rows of nodes whose
+    index is in that set.
+    
+    Args:
+        G (nx.Graph): the network graph of which we want the giant component
+        nodes (gpd.GeoDataFrame): a GeoDataFrame of the nodes of G with index
+            node_ID.
+        
+    Returns:
+        gpd.GeoDataFrame: a reduced GeoDataFrame of those nodes which lie in
+            the largest connected component.
+    """
+
+    nodes = nodes.to_crs("EPSG:6538")
+    giant = max(nx.connected_components(G), key=len)
+    giant_nodes = nodes[nodes.index.isin(giant)]
+    return giant_nodes
+
+def snap_to_giant(points: gpd.GeoDataFrame, giant_nodes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Add two new columns to the points GeoDataFrame: node (the ID of the nearest
+    giant-component node) and snap_m (the distance to it, in meters).
+
+    Convert points to the CRS of giant_nodes, join each point to its nearest
+    node, drop tie duplicates, keeping one row per the original index, and
+    rename the joined node column to node.
+
+    Args:
+        points (gpd.GeoDataFrame): locations of interest
+        giant_nodes (gpd.GeoDataFrame): the nodes of a network that lie in its
+            largest connected component
+
+    Returns:
+        gpd.GeoDataFrame: a copy of points with the new node and snap_m columns
+    """
+    snapped_points = points.to_crs(giant_nodes.crs)
+    snapped_points = gpd.sjoin_nearest(snapped_points, giant_nodes[["geometry"]], how="left", distance_col="snap_m")
+    snapped_points = snapped_points.rename(columns={"index_right": "node"})
+    snapped_points = snapped_points[~snapped_points.index.duplicated(keep="first")]
+    return snapped_points
