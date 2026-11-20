@@ -8,23 +8,41 @@ import networkx as nx
 import pandas as pd
 import shapely
 
-#Constants
+# Paths
 ROOT = Path(__file__).parent.parent
 FEEDS = {
     "q": ROOT / "data" / "raw" / "mta_gtfs_q_2026.zip",
     "busco": ROOT / "data" / "raw" / "mta_gtfs_busco_2026.zip",
 }
 BOROUGH_BOUNDARIES = ROOT / "data" / "raw" / "nyc_borough_boundaries_2024.geojson"
-MAX_STOP_GAP_M = 37 # feeds' gap for one stop above which the midpoint could be >5% of the 366 m radius off.
-
 SNAP_RETAILERS = ROOT / "data" / "raw" / "usda_snap_retailers_2026.geojson"
-
-PHARMACY_PATTERN = r"pharmacy|cvs|walgreen|rite aid|duane reade|farmacia|drug|chemist|\brx\b"
-DOLLAR_STORE_PATTERN = r"dollar|99 ?cent"
-CONVENIENCE_PATTERN = r"\bdeli\b|mini ?mart|convenience"
-
+FOOD_GROUP_TAGS = ROOT / "data" / "reference" / "usda_snap_food_group_tags_2026.csv"
 NETWORK_ZIP = ROOT / "data" / "raw" / "nycwalks_pedestrian_network_2026.zip"
 NETWORK_LAYER = "NYC_pednetwork_estimates_counts_2018-2019.geojson"
+
+# Walking and stop parameters
+MAX_STOP_GAP_M = 37 # feeds' gap for one stop above which the midpoint could be >5% of the 366 m radius off.
+WALK_RADIUS_M = 366
+
+# Food layer
+PHARMACY_PATTERN = r"pharmacy|cvs|walgreen|rite aid|duane reade|farmacia|drug|chemist|\brx\b"
+DOLLAR_STORE_PATTERN = r"dollar|99 ?cent"
+CONVENIENCE_PATTERN = r"\bdeli\b|mini ?mar(?:t|ket)|convenience"
+FULL_PLATE_TYPES = ("Supermarket", "Super Store", "Grocery Store")
+CONTEXT_TYPES = ("Convenience Store", "Restaurant Meals Program")
+TAGGED_TYPES = ("Specialty Store", "Other")
+CONTEXT_NAME_PATTERN = "|".join([PHARMACY_PATTERN, DOLLAR_STORE_PATTERN, CONVENIENCE_PATTERN])
+
+TAG_SHARES = {
+    "full_plate": 1,
+    "produce": 0.5,
+    "bread+protein": 0.5,
+    "bread": 0.25,
+    "protein": 0.25,
+    "no_plate_food": 0,
+    "sweets": 0,
+    "unknown": 0,
+} # Share of a Harvard Healthy Eating Plate: vegetables and fruit 1/2, whole grains 1/4, healthy protein 1/4
 
 
 def _read(zf: zipfile.ZipFile, name: str, **kwargs) -> pd.DataFrame:
@@ -189,3 +207,50 @@ def load_pedestrian_graph() -> tuple[nx.Graph, gpd.GeoDataFrame]:
     )
 
     return G, nodes
+
+def assign_food_shares(candidates: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Assign food shares to each candidate SNAP retailer that qualifies.
+
+    Join the candidate SNAP retailers GeoDataFrame (EPSG:6538) with the
+    reviewed tags in FOOD_GROUP_TAGS, add the layer ("scored", "context", or
+    "none") and share (0 to 1, set only for scored retailers) to the
+    GeoDataFrame.
+
+    Args:
+        candidates (gpd.GeoDataFrame): candidate SNAP retailers as loaded by 
+        load_candidate_snap_retailers() in EPSG:6538
+    
+    Returns:
+        gpd.GeoDataFrame: a copy of the original GeoDataFrame with two new columns (layer and share) appended to it and the Record_ID converted to a string in EPSG:6538
+    """
+    tags = pd.read_csv(FOOD_GROUP_TAGS, dtype={"Record_ID": str})
+    candidates_with_shares = candidates.copy()
+    candidates_with_shares["Record_ID"] = candidates_with_shares["Record_ID"].astype(str)
+    candidates_with_shares = candidates_with_shares.merge(
+        tags[["Record_ID", "proposed_tag"]], on="Record_ID", how="left"
+    )
+
+    store_type = candidates_with_shares["Store_Type"]
+    tag = candidates_with_shares["proposed_tag"]
+    name_matches = candidates_with_shares["Store_Name"].str.contains(CONTEXT_NAME_PATTERN, case=False, na=False)
+
+    layer = np.select(
+        [
+            store_type.isin(FULL_PLATE_TYPES),
+            store_type.isin(CONTEXT_TYPES),
+            (store_type == "Other") & name_matches,
+            store_type.isin(TAGGED_TYPES) & (tag == "context_convenience"),
+            store_type.isin(TAGGED_TYPES) & tag.notna(),
+            ], [
+                "scored", "context", "context", "context", "scored"
+            ],
+            default="none"
+    )
+
+    candidates_with_shares["layer"] = layer
+    candidates_with_shares["share"] = np.where(layer == "scored",
+         np.where(store_type.isin(FULL_PLATE_TYPES), 1.0, tag.map(TAG_SHARES)),
+         np.nan)
+    candidates_with_shares = candidates_with_shares.drop(columns="proposed_tag")
+    return candidates_with_shares
