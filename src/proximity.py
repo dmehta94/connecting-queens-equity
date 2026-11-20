@@ -118,7 +118,7 @@ def load_queens_stops() -> gpd.GeoDataFrame:
 
     return stops_out
 
-def filter_to_stop_zone(places: gpd.GeoDataFrame, stops: gpd.GeoDataFrame, radius_m: float = 366) -> gpd.GeoDataFrame:
+def filter_to_stop_zone(places: gpd.GeoDataFrame, stops: gpd.GeoDataFrame, radius_m: float = WALK_RADIUS_M) -> gpd.GeoDataFrame:
     """
     Converts both the places and stops to EPSG:6538, creates a buffer of the
     prescribed radius around each deduplicated bus stop, takes the union of
@@ -304,3 +304,34 @@ def snap_to_giant(points: gpd.GeoDataFrame, giant_nodes: gpd.GeoDataFrame) -> gp
     snapped_points = snapped_points.rename(columns={"index_right": "node"})
     snapped_points = snapped_points[~snapped_points.index.duplicated(keep="first")]
     return snapped_points
+
+def walk_distances(G: nx.Graph, snapped_stops: gpd.GeoDataFrame, radius_m: float = WALK_RADIUS_M) -> dict:
+    """
+    Determine which nodes of network G are walkable from each stop within the
+    given radius in meters.
+
+    Loop over all stops, determine the budget (radius_m - snap_m), store empty
+    dictionaries for stops with a budget of 0 or less, run Dijkstra's algorithm
+    on the rest with cutoff=budget, and store the result under the stop's
+    stop_id. Return the dictionary of dictionaries for all stops.
+
+    Args:
+        G (nx.Graph): The pedestrian network with edge length in meters
+        snapped_stops (gpd.GeoDataFrame): Stops from snap_to_giant() with
+            stop_id, node, and snap_m columns.
+        radius_m (float): The radius that determines the budget. Default is
+            WALK_RADIUS_M.
+
+    Returns:
+        dict: {stop_id: {node: meters}}. Distances along the network from each
+            stop's node and excluding the snap legs.
+    """
+
+    reachable = {}
+    for stop_id, node, snap_m in zip(snapped_stops["stop_id"], snapped_stops["node"], snapped_stops["snap_m"]):
+        budget = radius_m - snap_m
+        if budget <= 0:
+            reachable[stop_id] = {}
+        else:
+            reachable[stop_id] = nx.single_source_dijkstra_path_length(G, node, cutoff=budget, weight="length")
+    return reachable
