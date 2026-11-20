@@ -7,6 +7,7 @@ import numpy as np
 import networkx as nx
 import pandas as pd
 import shapely
+from collections import defaultdict
 
 # Paths
 ROOT = Path(__file__).parent.parent
@@ -299,6 +300,8 @@ def snap_to_giant(points: gpd.GeoDataFrame, giant_nodes: gpd.GeoDataFrame) -> gp
     Returns:
         gpd.GeoDataFrame: a copy of points with the new node and snap_m columns
     """
+    if giant_nodes.crs is None:
+        raise ValueError("giant_nodes has no CRS; expected the output of giant_component_nodes().")
     snapped_points = points.to_crs(giant_nodes.crs)
     snapped_points = gpd.sjoin_nearest(snapped_points, giant_nodes[["geometry"]], how="left", distance_col="snap_m")
     snapped_points = snapped_points.rename(columns={"index_right": "node"})
