@@ -7,7 +7,8 @@ dependency figures from data/derived/, then writes three small GeoJSON files
 for map/index.html to load:
 
 - nta_queens.geojson: the 82 Queens NTAs, outlines simplified for phones, with
-  each NTA's transit dependency counts summed from its tracts.
+  each NTA's transit dependency counts summed from its tracts, and an interior
+  point (`circle_lon`, `circle_lat`) where the map draws the NTA's food circle.
 - tracts_queens.geojson: the Queens census tracts, clipped to the shoreline
   (their NTA) and simplified, with rounded vehicle deficit and housing cost
   burden shares. Tracts with no households have null shares ("no data").
@@ -38,6 +39,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
+from shapely.ops import polylabel
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -51,6 +53,7 @@ TRACT_NTA = ROOT / "data" / "derived" / "tract_nta_queens_2024.csv"
 FOOD_PROXIMITY = ROOT / "data" / "derived" / "proximity_food_2026.csv"
 FOOD_COLUMNS = ["food_score", "food_store_count", "context_store_count", "network_flag"]
 SCORE_DECIMALS = 2
+POLYLABEL_TOLERANCE_M = 5
 QUEENS_COUNTYFP = "081"
 OUT_DIR = ROOT / "map" / "data"
 MAP_INDEX = ROOT / "map" / "index.html"
@@ -91,6 +94,43 @@ def load_queens_ntas() -> gpd.GeoDataFrame:
     if len(unknown) > 0:
         raise ValueError(f"Unknown ntatype codes: {list(unknown)}")
     return queens[["nta2020", "ntaname", "ntatype", "nta_type_label", "geometry"]].to_crs(WORK_CRS)
+
+
+def interior_points(ntas: gpd.GeoDataFrame) -> pd.DataFrame:
+    """
+    Find a point well inside each NTA for its map circle.
+
+    Uses the pole of inaccessibility (polylabel) of the NTA's largest part:
+    the interior point farthest from any edge, so the circle sits inside
+    even L-shaped or island NTAs, where a centroid can fall outside.
+
+    Args:
+        ntas: Queens NTAs in EPSG:6538 (unsimplified).
+
+    Returns:
+        pd.DataFrame: `nta2020`, `circle_lon`, `circle_lat` (WGS84,
+        COORD_DECIMALS).
+
+    Raises:
+        ValueError: If any point falls outside its NTA.
+    """
+
+    def largest_part(geom):
+        return max(geom.geoms, key=lambda g: g.area) if geom.geom_type == "MultiPolygon" else geom
+
+    points = gpd.GeoSeries(
+        [polylabel(largest_part(g), tolerance=POLYLABEL_TOLERANCE_M) for g in ntas.geometry],
+        index=ntas.index, crs=WORK_CRS,
+    )
+    outside = ntas.loc[~points.within(ntas.geometry), "nta2020"].tolist()
+    if outside:
+        raise ValueError(f"Interior points outside their NTA: {outside}")
+    web = points.to_crs(WEB_CRS)
+    return pd.DataFrame({
+        "nta2020": ntas["nta2020"].values,
+        "circle_lon": web.x.round(COORD_DECIMALS).values,
+        "circle_lat": web.y.round(COORD_DECIMALS).values,
+    })
 
 
 def tag_stops(stops: gpd.GeoDataFrame, ntas: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -301,6 +341,7 @@ def main() -> None:
     outlines["geometry"] = outlines.geometry.simplify(SIMPLIFY_M, preserve_topology=True)
     outlines = outlines.merge(summarize_ntas(figures), on="nta2020", how="left", validate="one_to_one")
     outlines[COUNT_COLUMNS] = outlines[COUNT_COLUMNS].fillna(0).astype(int)
+    outlines = outlines.merge(interior_points(ntas), on="nta2020", how="left", validate="one_to_one")
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     nta_path = OUT_DIR / "nta_queens.geojson"
