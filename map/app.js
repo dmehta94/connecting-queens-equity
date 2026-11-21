@@ -56,8 +56,10 @@ function ntaCircleRadius() {
 
 // NTA circles: share of the NTA's served stops with food_score 0. Same colors and direction
 // as the stop classes (darker = less food); a share at a break falls in the higher class.
-// NTAs with fewer than MIN_SERVED served stops get a hollow, dashed circle instead.
+// NTAs with fewer than MIN_SERVED served stops get a hollow, dashed circle instead, as do
+// NTAs with no households (parks, cemeteries, airports), so they don't stand in for where people live.
 const MIN_SERVED = 5;
+const noHouseholds = new Set(); // NTA codes with households = 0; filled when the NTAs load
 const NTA_FOOD_CLASSES = [
   { min: 0, label: "Under 20%", fill: "#fff7bc", ring: "#1C1C1A" },
   { min: 0.2, label: "20–40%", fill: "#fec44f", ring: "#1C1C1A" },
@@ -250,7 +252,7 @@ function fillFoodLegends() {
   document.getElementById("food-legend").replaceChildren(
     ...legendItems(FOOD_CLASSES, (c) => ringStyle(c, c.score === 0)),
   );
-  const tooFew = { label: `Fewer than ${MIN_SERVED} served stops` };
+  const tooFew = { label: `Fewer than ${MIN_SERVED} served stops, or no households` };
   document.getElementById("nta-food-legend").replaceChildren(...legendItems(
     [...NTA_FOOD_CLASSES, tooFew],
     (c) => (c === tooFew
@@ -267,7 +269,7 @@ function ntaFoodClass(share) {
 
 function circleStyle(nta) {
   const c = countsFor(nta);
-  if (c.served < MIN_SERVED) {
+  if (noHouseholds.has(nta) || c.served < MIN_SERVED) {
     return { radius: ntaCircleRadius(), color: getCss("--ink"), weight: 1.5, dashArray: "3 3", fillOpacity: 0, opacity: 1 };
   }
   const food = ntaFoodClass(c.noFood / c.served);
@@ -334,7 +336,9 @@ function ntaPopup(nta) {
   const name = document.createElement("strong");
   name.textContent = ntaNames[nta];
   const detail = document.createElement("div");
-  detail.textContent = c.served < MIN_SERVED
+  detail.textContent = noHouseholds.has(nta)
+    ? "No households live here, so no share is shown."
+    : c.served < MIN_SERVED
     ? `Too few served stops to show a share: ${c.served} at ${SNAPSHOT_LABELS[state.snapshot]}.`
     : noFoodSentence(c);
   div.append(name, detail);
@@ -399,6 +403,7 @@ async function init() {
     tractLayer = L.geoJSON(tractData, { style: tractStyle, interactive: false }).addTo(map);
 
     ntaFeatures = ntaData.features;
+    for (const f of ntaFeatures) if (f.properties.households === 0) noHouseholds.add(f.properties.nta2020);
     ntaLayer = L.geoJSON(ntaData, {
       style: ntaStyle,
       onEachFeature: (feature, layer) => {
