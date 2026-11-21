@@ -20,10 +20,12 @@ SNAP_RETAILERS = ROOT / "data" / "raw" / "usda_snap_retailers_2026.geojson"
 FOOD_GROUP_TAGS = ROOT / "data" / "reference" / "usda_snap_food_group_tags_2026.csv"
 NETWORK_ZIP = ROOT / "data" / "raw" / "nycwalks_pedestrian_network_2026.zip"
 NETWORK_LAYER = "NYC_pednetwork_estimates_counts_2018-2019.geojson"
+FOOD_PROXIMITY_OUT = ROOT / "data" / "derived" / "proximity_food_2026.csv"
 
 # Walking and stop parameters
 MAX_STOP_GAP_M = 37 # feeds' gap for one stop above which the midpoint could be >5% of the 366 m radius off.
 WALK_RADIUS_M = 366
+NETWORK_FLAG_M = 50
 
 # Food layer
 PHARMACY_PATTERN = r"pharmacy|cvs|walgreen|rite aid|duane reade|farmacia|drug|chemist|\brx\b"
@@ -33,6 +35,7 @@ FULL_PLATE_TYPES = ("Supermarket", "Super Store", "Grocery Store")
 CONTEXT_TYPES = ("Convenience Store", "Restaurant Meals Program")
 TAGGED_TYPES = ("Specialty Store", "Other")
 CONTEXT_NAME_PATTERN = "|".join([PHARMACY_PATTERN, DOLLAR_STORE_PATTERN, CONVENIENCE_PATTERN])
+FOOD_PROXIMITY_COLUMNS = ["stop_id", "food_score", "food_score_uncapped", "food_store_count", "context_store_count", "snap_m", "network_flag"]
 
 TAG_SHARES = {
     "full_plate": 1,
@@ -406,3 +409,38 @@ def score_food(reachable: dict, snapped_stops: gpd.GeoDataFrame, snapped_stores:
                     context_count += 1
         rows.append({"stop_id": stop_id, "food_score_uncapped": total, "food_score": min(total, 1), "food_store_count": food_count, "context_store_count": context_count})
     return pd.DataFrame(rows)
+
+def build_food_proximity(path: Path = FOOD_PROXIMITY_OUT) -> pd.DataFrame:
+    """
+    Run the whole food proximity pipeline from the raw files to the output CSV.
+
+    Load the stops, load the candidate SNAP retailers, assign food shares to
+    each candidate, load the pedestrian network graph, identify the nodes of
+    the giant component, snap the stops and shared-out stores to those nodes,
+    determine the walk distances for snapped stops, score food access, merge
+    the stops' snap_m onto the scores, add the network_flag, order all seven
+    columns, and write to the CSV at path with index=False, then return the
+    table.
+
+    Args:
+        path (Path): Where to write the CSV. Default is FOOD_PROXIMITY_OUT.
+    
+    Returns:
+        pd.DataFrame: One row per stop, with stop_id, food_score,
+            food_score_uncapped, food_store_count, context_store_count,
+            snap_m, and network_flag, in that order.
+    """
+    stops = load_queens_stops()
+    candidates = load_candidate_snap_retailers(stops)
+    candidates = assign_food_shares(candidates)
+    G, nodes = load_pedestrian_graph()
+    giant_nodes = giant_component_nodes(G, nodes)
+    snapped_stops = snap_to_giant(stops, giant_nodes)
+    snapped_stores = snap_to_giant(candidates, giant_nodes)
+    reachable = walk_distances(G, snapped_stops)
+    scores = score_food(reachable, snapped_stops, snapped_stores)
+    merged = scores.merge(snapped_stops[["stop_id", "snap_m"]], on="stop_id", how="left")
+    merged["network_flag"] = merged["snap_m"] > NETWORK_FLAG_M
+    merged = merged[FOOD_PROXIMITY_COLUMNS]
+    merged.to_csv(path, index=False)
+    return merged
