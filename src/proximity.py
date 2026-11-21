@@ -338,3 +338,71 @@ def walk_distances(G: nx.Graph, snapped_stops: gpd.GeoDataFrame, radius_m: float
         else:
             reachable[stop_id] = nx.single_source_dijkstra_path_length(G, node, cutoff=budget, weight="length")
     return reachable
+
+def _points_by_node(points: gpd.GeoDataFrame, columns: list[str]) -> dict:
+    """
+    Produces a dictionary associating each network node that has points snapped
+    to it with those points’ values for the requested columns..
+    
+    Args:
+        points (gpd.GeoDataFrame): Snapped points from snap_to_giant(), with a
+            node column and every column named in columns.
+        columns (list[str]): The columns to carry for each point, in the order
+            they should appear in each tuple.
+    
+    Returns:
+        dict: {node: [(value, ...), ...]}, one tuple per point snapped to that
+            node. Values are in the order given by columns.
+    """
+    points_by_node = defaultdict(list)
+    for node, *values in points[["node", *columns]].itertuples(index=False, name=None):
+        points_by_node[node].append(tuple(values))
+    return points_by_node
+
+def score_food(reachable: dict, snapped_stops: gpd.GeoDataFrame, snapped_stores: gpd.GeoDataFrame, radius_m: float = WALK_RADIUS_M) -> pd.DataFrame:
+    """
+    Find all food stores within a walk of radius_m of each stop and
+    turn them into four scores: food_score_uncapped, food_score,
+    food_store_count, and context_store_count.
+
+    Group stores by node, carrying snap_m, layer, and share, work out the budget
+    for each stop, determine which stores are radius_m-reachable, and tally
+    each score named above for each stop based on reachable food stores,
+    including context layer stores.
+
+    Args:
+        reachable (dict): Output of walk_distances(), {stop_id: {node: meters}}.
+        snapped_stops (gpd.GeoDataFrame): Stops from snap_to_giant(), with
+            stop_id and snap_m columns.
+        snapped_stores (gpd.GeoDataFrame): Food stores from snap_to_giant()
+            run on assign_food_shares() output, with node, snap_m, layer, and
+            share columns.
+        radius_m (gpd.GeoDataFrame): Walking radius in meters, including
+            both snap legs. Default is WALK_RADIUS_M.
+
+    Returns:
+        pd.DataFrame: One row per stop, with stop_id, food_score_uncapped
+            (summed plate shares of scored stores), food_score (the same,
+            capped at 1), food_store_count (scored stores with a share above
+            0), and context_store_count.
+    """
+    groups = _points_by_node(snapped_stores, ["snap_m", "layer", "share"])
+    rows = []
+
+    for stop_id, snap_m in zip(snapped_stops["stop_id"], snapped_stops["snap_m"]):
+        budget = radius_m - snap_m
+        total = 0
+        food_count = 0
+        context_count = 0
+        for node, dist in reachable[stop_id].items():
+            for store_snap, layer, share in groups.get(node, []):
+                if dist + store_snap > budget:
+                    continue
+                if layer == "scored":
+                    total += share
+                    if share > 0:
+                        food_count += 1
+                elif layer == "context":
+                    context_count += 1
+        rows.append({"stop_id": stop_id, "food_score_uncapped": total, "food_score": min(total, 1), "food_store_count": food_count, "context_store_count": context_count})
+    return pd.DataFrame(rows)
