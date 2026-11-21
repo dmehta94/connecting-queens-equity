@@ -12,8 +12,7 @@
   --line: #d9d0c1;
   --panel: rgba(244, 239, 230, 0.97);
 
-  /* Data (map) */
-  --served: #1C1C1A;
+  /* Data (map); food access stop colors live in app.js (FOOD_CLASSES) */
   --unserved: #8a8f96;
   --nodata: #e4ded3;
 }
@@ -257,17 +256,22 @@ select {
   border-radius: 50%;
 }
 
-.dot.served { background: var(--served); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--served); }
+.dot.served { background: #fe9929; border: 1px solid var(--ink); }
 .dot.unserved { background: #fff; border: 2px solid var(--unserved); }
 
-.placeholder {
-  margin: 10px 0 0;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
-  font-size: 13px;
-  color: var(--muted);
-  font-style: italic;
+#food-summary {
+  margin: 8px 0 0;
+  font-weight: 600;
+  line-height: 1.45;
 }
+
+.section .legend-title {
+  margin: 0 0 2px;
+  font-size: 13px;
+}
+
+.leaflet-popup-content .food-line { margin-top: 4px; }
+.leaflet-popup-content .food-note { margin-top: 4px; font-style: italic; color: var(--muted); }
 
 .credits {
   margin: 10px 0 0;

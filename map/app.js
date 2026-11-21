@@ -32,6 +32,19 @@ const MEASURES = {
   },
 };
 
+// Served stops are colored by food_score: plate shares come in quarters, so one class per
+// quarter. Darker = less food, matching the tracts' darker = more need. The "None" class
+// also differs in outline (white ring vs. ink ring), so it reads without color.
+// Light classes (ColorBrewer YlOrBr) carry an ink ring for light tracts; "None" is ink with
+// a white ring for dark tracts.
+const FOOD_CLASSES = [
+  { score: 0, label: "None", fill: "#1C1C1A", ring: "#ffffff" },
+  { score: 0.25, label: "A quarter plate", fill: "#d95f0e", ring: "#1C1C1A" },
+  { score: 0.5, label: "Half a plate", fill: "#fe9929", ring: "#1C1C1A" },
+  { score: 0.75, label: "Three quarters of a plate", fill: "#fec44f", ring: "#1C1C1A" },
+  { score: 1, label: "A full plate", fill: "#fff7bc", ring: "#1C1C1A" },
+];
+
 const state = { nta: "", snapshot: "weekday", measure: "cars" };
 
 const map = L.map("map", { preferCanvas: true, zoomControl: true }).setView(QUEENS_CENTER, 11);
@@ -86,14 +99,22 @@ function ntaStyle(feature) {
   };
 }
 
+// The class at or below a score (food_score is rounded to 2 decimals in the data).
+function foodClass(score) {
+  let match = FOOD_CLASSES[0];
+  for (const c of FOOD_CLASSES) if (score >= c.score) match = c;
+  return match;
+}
+
 function stopStyle(feature) {
   const served = feature.properties[state.snapshot];
   const inPick = !state.nta || feature.properties.nta2020 === state.nta;
+  const food = foodClass(feature.properties.food_score);
   return {
     radius: inPick ? 4 : 2.5,
-    color: served ? "#ffffff" : getCss("--unserved"),
-    weight: served ? 1 : 1.5,
-    fillColor: served ? getCss("--served") : "#ffffff",
+    color: served ? food.ring : getCss("--unserved"),
+    weight: served && food.score > 0 ? 1 : 1.5,
+    fillColor: served ? food.fill : "#ffffff",
     fillOpacity: inPick ? 1 : 0.5,
     opacity: inPick ? 1 : 0.5,
   };
@@ -145,7 +166,29 @@ function updateSummary() {
   const place = state.nta ? ntaNames[state.nta] : "Queens";
   summary.textContent = inArea.length === 0
     ? `${place}: no bus stops.`
-    : `${place}: ${served} of ${inArea.length} bus stops have scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}.`;
+    : `${place}: ${served.toLocaleString("en-US")} of ${inArea.length.toLocaleString("en-US")} bus stops have scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}.`;
+
+  // Food figure: counts of served stops, not an average of scores.
+  const foodSummary = document.getElementById("food-summary");
+  const noFood = inArea.filter((s) => s.properties[state.snapshot] && s.properties.food_score === 0).length;
+  foodSummary.textContent = served === 0
+    ? `${place}: no served stops in this snapshot.`
+    : `${noFood.toLocaleString("en-US")} of ${served.toLocaleString("en-US")} served stops (${Math.round(100 * noFood / served)}%) have no nutritious, affordable food within a 5-minute walk.`;
+}
+
+function fillFoodLegend() {
+  document.getElementById("food-legend").replaceChildren(...FOOD_CLASSES.map((c) => {
+    const li = document.createElement("li");
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    dot.style.background = c.fill;
+    dot.style.border = `${c.score === 0 ? 2 : 1}px solid ${c.ring}`;
+    if (c.score === 0) dot.style.boxShadow = `0 0 0 1px ${c.fill}`;
+    const label = document.createElement("span");
+    label.textContent = c.label;
+    li.append(dot, label);
+    return li;
+  }));
 }
 
 function render() {
@@ -228,7 +271,8 @@ async function init() {
     stops = stopData.features;
     stopLayer = L.geoJSON(stopData, {
       pointToLayer: (feature, latlng) => L.circleMarker(latlng, stopStyle(feature)),
-      onEachFeature: (feature, layer) => layer.bindPopup(() => stopPopup(feature)),
+      // maxWidth keeps the longer food popup inside a 375 px phone screen.
+      onEachFeature: (feature, layer) => layer.bindPopup(() => stopPopup(feature), { maxWidth: 260 }),
     }).addTo(map);
 
     fillPicker(ntaData.features);
@@ -250,6 +294,24 @@ function stopPopup(feature) {
     ? `Scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}`
     : `No scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}`;
   div.append(name, detail);
+
+  const lines = [
+    `Nutritious, affordable food within a 5-minute walk: ${foodClass(p.food_score).label.toLowerCase()}`,
+    `Grocery and food stores within a 5-minute walk: ${p.food_store_count}`,
+    `Other food retailers (convenience stores, pharmacies, dollar stores, Restaurant Meals Program restaurants): ${p.context_store_count}`,
+  ];
+  for (const text of lines) {
+    const line = document.createElement("div");
+    line.className = "food-line";
+    line.textContent = text;
+    div.append(line);
+  }
+  if (p.network_flag) {
+    const note = document.createElement("div");
+    note.className = "food-note";
+    note.textContent = "This stop is far from the mapped sidewalks, so this score is less reliable.";
+    div.append(note);
+  }
   return div;
 }
 
@@ -275,4 +337,5 @@ document.querySelectorAll('input[name="measure"]').forEach((input) => {
 });
 
 updateLegend();
+fillFoodLegend();
 init();

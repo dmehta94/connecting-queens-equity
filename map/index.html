@@ -62,12 +62,18 @@
       <p id="summary" aria-live="polite">Loading…</p>
 
       <ul class="legend">
-        <li><span class="dot served"></span> Scheduled local bus service, 10 AM to 2 PM</li>
-        <li><span class="dot unserved"></span> No scheduled local service in this snapshot</li>
+        <li><span class="dot served"></span> Filled: scheduled local bus service, 10 AM to 2 PM (color shows food access, below)</li>
+        <li><span class="dot unserved"></span> Hollow: no scheduled local service in this snapshot</li>
       </ul>
     </div>
 
-    <p class="placeholder">Walking access to essential services: coming soon.</p>
+    <div class="section">
+      <span class="field-label">Essential services: food</span>
+      <p class="legend-title">Nutritious, affordable food within a 5-minute walk</p>
+      <ul class="legend" id="food-legend" aria-label="Color key for bus stops"></ul>
+      <p class="legend-note">Assumes stores are open in both weekday and Sunday service.</p>
+      <p id="food-summary" aria-live="polite"></p>
+    </div>
 
     <p class="credits">
       Data: <a href="https://opendata.cityofnewyork.us/">NYC Open Data</a>, <a href="https://www.mta.info/developers">MTA</a>,
