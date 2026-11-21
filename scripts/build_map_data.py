@@ -14,7 +14,9 @@ for map/index.html to load:
 - stops_queens.geojson: Queens bus stops (from proximity.load_queens_stops()),
   each tagged with its NTA and whether it has scheduled local service in the
   weekday midday and Sunday midday snapshots. Proximity uses local service
-  only, so express-only stops count as not served here.
+  only, so express-only stops count as not served here. Each stop also carries
+  its food access figures from data/derived/proximity_food_2026.csv (built by
+  proximity.build_food_proximity()); the score is the same in both snapshots.
 
 map/data/ is committed so the map can be served as static files. Nothing is
 written to BigQuery.
@@ -46,6 +48,9 @@ SNAPSHOTS = ROOT / "data" / "derived" / "service_snapshots_2026.csv"
 TRACT_BOUNDARIES = ROOT / "data" / "raw" / "tiger_census_tracts_ny_2022.zip"
 TRACT_FIGURES = ROOT / "data" / "derived" / "census_tracts_queens_2024.csv"
 TRACT_NTA = ROOT / "data" / "derived" / "tract_nta_queens_2024.csv"
+FOOD_PROXIMITY = ROOT / "data" / "derived" / "proximity_food_2026.csv"
+FOOD_COLUMNS = ["food_score", "food_store_count", "context_store_count", "network_flag"]
+SCORE_DECIMALS = 2
 QUEENS_COUNTYFP = "081"
 OUT_DIR = ROOT / "map" / "data"
 MAP_INDEX = ROOT / "map" / "index.html"
@@ -112,6 +117,38 @@ def tag_stops(stops: gpd.GeoDataFrame, ntas: gpd.GeoDataFrame) -> gpd.GeoDataFra
     tagged = tagged.merge(snapshots, on="stop_id", how="left")
     tagged[["weekday", "sunday"]] = tagged[["weekday", "sunday"]].fillna(False).astype(bool)
     return tagged
+
+
+def add_food_access(stops: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """
+    Join each stop's food access figures from the food proximity CSV.
+
+    Args:
+        stops: Output of tag_stops().
+
+    Returns:
+        gpd.GeoDataFrame: `stops` plus FOOD_COLUMNS, with `food_score`
+        rounded to SCORE_DECIMALS.
+
+    Raises:
+        ValueError: If the CSV has duplicate stop IDs, or any stop is missing
+        from either side, so no stop reaches the map without a score.
+    """
+
+    food = pd.read_csv(FOOD_PROXIMITY, dtype={"stop_id": str}, usecols=["stop_id", *FOOD_COLUMNS])
+    if food["stop_id"].duplicated().any():
+        raise ValueError(f"Duplicate stop_id values in {FOOD_PROXIMITY.name}")
+    map_only = sorted(set(stops["stop_id"]) - set(food["stop_id"]))
+    csv_only = sorted(set(food["stop_id"]) - set(stops["stop_id"]))
+    if map_only or csv_only:
+        raise ValueError(
+            f"Food CSV doesn't match the map stops: {len(map_only)} map stops missing from "
+            f"{FOOD_PROXIMITY.name} (first: {map_only[:5]}), {len(csv_only)} CSV stops not on the map "
+            f"(first: {csv_only[:5]})"
+        )
+    food["food_score"] = food["food_score"].round(SCORE_DECIMALS)
+    food["network_flag"] = food["network_flag"].astype(bool)
+    return stops.merge(food, on="stop_id", how="left", validate="one_to_one")
 
 
 def load_tract_figures() -> pd.DataFrame:
@@ -256,7 +293,7 @@ def main() -> None:
     """
 
     ntas = load_queens_ntas()
-    stops = tag_stops(load_queens_stops(), ntas)
+    stops = add_food_access(tag_stops(load_queens_stops(), ntas))
     figures = load_tract_figures()
     tracts = build_tracts(figures, ntas)
 
@@ -280,6 +317,7 @@ def main() -> None:
     print(f"  without an NTA: {int(stops['nta2020'].isna().sum())}")
     print(f"  weekday midday local service: {int(stops['weekday'].sum())}")
     print(f"  sunday midday local service:  {int(stops['sunday'].sum())}")
+    print(f"  food score 0: {int((stops['food_score'] == 0).sum())}; network_flag: {int(stops['network_flag'].sum())}")
     print(f"\n{nta_path.name}: {nta_path.stat().st_size / 1024:.0f} KB")
     print(f"{stops_path.name}: {stops_path.stat().st_size / 1024:.0f} KB")
     print(f"{tracts_path.name}: {tracts_path.stat().st_size / 1024:.0f} KB")
