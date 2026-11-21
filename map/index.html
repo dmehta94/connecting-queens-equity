@@ -61,7 +61,7 @@
 
       <p id="summary" aria-live="polite">Loading…</p>
 
-      <ul class="legend">
+      <ul class="legend" id="bus-legend">
         <li><span class="dot served"></span> Filled: scheduled local bus service, 10 AM to 2 PM (color shows food access, below)</li>
         <li><span class="dot unserved"></span> Hollow: no scheduled local service in this snapshot</li>
       </ul>
@@ -69,8 +69,15 @@
 
     <div class="section">
       <span class="field-label">Essential services: food</span>
-      <p class="legend-title">Nutritious, affordable food within a 5-minute walk</p>
-      <ul class="legend" id="food-legend" aria-label="Color key for bus stops"></ul>
+      <div id="nta-legend-block">
+        <p class="legend-title">Neighborhoods: share of served stops with no nutritious, affordable food within a 5-minute walk</p>
+        <ul class="legend" id="nta-food-legend" aria-label="Color key for neighborhood circles"></ul>
+        <p class="legend-note">Zoom in to see each stop.</p>
+      </div>
+      <div id="stop-legend-block">
+        <p class="legend-title">Stops: nutritious, affordable food within a 5-minute walk</p>
+        <ul class="legend" id="food-legend" aria-label="Color key for bus stops"></ul>
+      </div>
       <p class="legend-note">Assumes stores are open in both weekday and Sunday service.</p>
       <p id="food-summary" aria-live="polite"></p>
     </div>

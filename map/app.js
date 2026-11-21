@@ -1,5 +1,5 @@
-// Workshop map: Queens NTAs, census tracts, bus stops, NTA picker, two switches
-// (tract shading and weekday/Sunday service).
+// Workshop map: Queens NTAs, census tracts, bus stops (or NTA food circles at borough zoom),
+// NTA picker, two switches (tract shading and weekday/Sunday service).
 // Static: reads precomputed GeoJSON from data/ (built by scripts/build_map_data.py).
 
 // Data version stamped on this script's tag by build_map_data.py; added to data fetches
@@ -45,6 +45,27 @@ const FOOD_CLASSES = [
   { score: 1, label: "A full plate", fill: "#fff7bc", ring: "#1C1C1A" },
 ];
 
+// Below STOP_ZOOM (borough zoom), stops are replaced by one circle per NTA; the selected
+// NTA's stops show at every zoom. At 13 one neighborhood fills most of the screen.
+const STOP_ZOOM = 13;
+// One size for every NTA circle, growing with zoom so they don't pile up when zoomed far out.
+function ntaCircleRadius() {
+  const zoom = map.getZoom();
+  return zoom <= 10 ? 5 : zoom === 11 ? 7 : 9;
+}
+
+// NTA circles: share of the NTA's served stops with food_score 0. Same colors and direction
+// as the stop classes (darker = less food); a share at a break falls in the higher class.
+// NTAs with fewer than MIN_SERVED served stops get a hollow, dashed circle instead.
+const MIN_SERVED = 5;
+const NTA_FOOD_CLASSES = [
+  { min: 0, label: "Under 20%", fill: "#fff7bc", ring: "#1C1C1A" },
+  { min: 0.2, label: "20–40%", fill: "#fec44f", ring: "#1C1C1A" },
+  { min: 0.4, label: "40–60%", fill: "#fe9929", ring: "#1C1C1A" },
+  { min: 0.6, label: "60–80%", fill: "#d95f0e", ring: "#1C1C1A" },
+  { min: 0.8, label: "80% or more", fill: "#1C1C1A", ring: "#ffffff" },
+];
+
 const state = { nta: "", snapshot: "weekday", measure: "cars" };
 
 const map = L.map("map", { preferCanvas: true, zoomControl: true }).setView(QUEENS_CENTER, 11);
@@ -59,7 +80,10 @@ const summary = document.getElementById("summary");
 
 let ntaLayer;
 let tractLayer;
-let stopLayer;
+let stopLayer; // holds the stop markers drawn at the current zoom and selection
+let circleLayer; // holds the NTA circles drawn at the current zoom and selection
+let stopMarkers = [];
+const ntaCircles = {};
 let stops = [];
 let ntaFeatures = [];
 const ntaNames = {};
@@ -160,44 +184,161 @@ function updateLegend() {
   document.getElementById("cars-note").hidden = state.measure !== "cars";
 }
 
-function updateSummary() {
-  const inArea = state.nta ? stops.filter((s) => s.properties.nta2020 === state.nta) : stops;
-  const served = inArea.filter((s) => s.properties[state.snapshot]).length;
-  const place = state.nta ? ntaNames[state.nta] : "Queens";
-  summary.textContent = inArea.length === 0
-    ? `${place}: no bus stops.`
-    : `${place}: ${served.toLocaleString("en-US")} of ${inArea.length.toLocaleString("en-US")} bus stops have scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}.`;
-
-  // Food figure: counts of served stops, not an average of scores.
-  const foodSummary = document.getElementById("food-summary");
-  const noFood = inArea.filter((s) => s.properties[state.snapshot] && s.properties.food_score === 0).length;
-  foodSummary.textContent = served === 0
-    ? `${place}: no served stops in this snapshot.`
-    : `${noFood.toLocaleString("en-US")} of ${served.toLocaleString("en-US")} served stops (${Math.round(100 * noFood / served)}%) have no nutritious, affordable food within a 5-minute walk.`;
+function formatCount(n) {
+  return n.toLocaleString("en-US");
 }
 
-function fillFoodLegend() {
-  document.getElementById("food-legend").replaceChildren(...FOOD_CLASSES.map((c) => {
+// Stop and food counts per snapshot, keyed by NTA code ("" = all of Queens). Built once when
+// the stops load; the panel, the NTA circles, and their popups all read this table, so their
+// figures can't differ. Counts of served stops, never an average of scores.
+const stopCounts = { weekday: {}, sunday: {} };
+
+function buildStopCounts() {
+  for (const [snapshot, table] of Object.entries(stopCounts)) {
+    for (const { properties: p } of stops) {
+      for (const key of ["", p.nta2020]) {
+        const c = (table[key] ??= { stops: 0, served: 0, noFood: 0 });
+        c.stops += 1;
+        if (p[snapshot]) {
+          c.served += 1;
+          if (p.food_score === 0) c.noFood += 1;
+        }
+      }
+    }
+  }
+}
+
+function countsFor(nta) {
+  return stopCounts[state.snapshot][nta] ?? { stops: 0, served: 0, noFood: 0 };
+}
+
+function noFoodSentence(c) {
+  return `${formatCount(c.noFood)} of ${formatCount(c.served)} served stops (${Math.round(100 * c.noFood / c.served)}%) `
+    + "have no nutritious, affordable food within a 5-minute walk.";
+}
+
+function updateSummary() {
+  const c = countsFor(state.nta);
+  const place = state.nta ? ntaNames[state.nta] : "Queens";
+  summary.textContent = c.stops === 0
+    ? `${place}: no bus stops.`
+    : `${place}: ${formatCount(c.served)} of ${formatCount(c.stops)} bus stops have scheduled local service at ${SNAPSHOT_LABELS[state.snapshot]}.`;
+  document.getElementById("food-summary").textContent = c.served === 0
+    ? `${place}: no served stops in this snapshot.`
+    : noFoodSentence(c);
+}
+
+function legendItems(classes, dotFor) {
+  return classes.map((c) => {
     const li = document.createElement("li");
     const dot = document.createElement("span");
     dot.className = "dot";
-    dot.style.background = c.fill;
-    dot.style.border = `${c.score === 0 ? 2 : 1}px solid ${c.ring}`;
-    if (c.score === 0) dot.style.boxShadow = `0 0 0 1px ${c.fill}`;
+    Object.assign(dot.style, dotFor(c));
     const label = document.createElement("span");
     label.textContent = c.label;
     li.append(dot, label);
     return li;
-  }));
+  });
+}
+
+function fillFoodLegends() {
+  const ringStyle = (c, darkest) => ({
+    background: c.fill,
+    border: `${darkest ? 2 : 1}px solid ${c.ring}`,
+    boxShadow: darkest ? `0 0 0 1px ${c.fill}` : "",
+  });
+  document.getElementById("food-legend").replaceChildren(
+    ...legendItems(FOOD_CLASSES, (c) => ringStyle(c, c.score === 0)),
+  );
+  const tooFew = { label: `Fewer than ${MIN_SERVED} served stops` };
+  document.getElementById("nta-food-legend").replaceChildren(...legendItems(
+    [...NTA_FOOD_CLASSES, tooFew],
+    (c) => (c === tooFew
+      ? { background: "transparent", border: "1.5px dashed var(--ink)" }
+      : ringStyle(c, c.min === 0.8)),
+  ));
+}
+
+function ntaFoodClass(share) {
+  let match = NTA_FOOD_CLASSES[0];
+  for (const c of NTA_FOOD_CLASSES) if (share >= c.min) match = c;
+  return match;
+}
+
+function circleStyle(nta) {
+  const c = countsFor(nta);
+  if (c.served < MIN_SERVED) {
+    return { radius: ntaCircleRadius(), color: getCss("--ink"), weight: 1.5, dashArray: "3 3", fillOpacity: 0, opacity: 1 };
+  }
+  const food = ntaFoodClass(c.noFood / c.served);
+  return {
+    radius: ntaCircleRadius(),
+    color: food.ring,
+    weight: food.min === 0.8 ? 2 : 1.5,
+    dashArray: null,
+    fillColor: food.fill,
+    fillOpacity: 1,
+    opacity: 1,
+  };
+}
+
+function boroughZoom() {
+  return map.getZoom() < STOP_ZOOM;
+}
+
+// Zoom rule: at borough zoom, NTA circles replace stops, except in the selected NTA, whose
+// stops always show (and whose circle is hidden). Layers are re-added circles first, then
+// stops, so stops draw on top of any circle they touch.
+function renderMapLayers() {
+  if (!stopLayer) return;
+  const borough = boroughZoom();
+  circleLayer.clearLayers();
+  stopLayer.clearLayers();
+  if (borough) {
+    for (const [nta, circle] of Object.entries(ntaCircles)) {
+      if (nta === state.nta) continue;
+      circle.setStyle(circleStyle(nta));
+      circleLayer.addLayer(circle);
+    }
+  }
+  for (const marker of stopMarkers) {
+    if (borough && marker.feature.properties.nta2020 !== state.nta) continue;
+    marker.setStyle(stopStyle(marker.feature));
+    stopLayer.addLayer(marker);
+  }
+
+  // Legends follow what's drawn.
+  const showStops = !borough || Boolean(state.nta);
+  document.getElementById("nta-legend-block").hidden = !borough;
+  document.getElementById("stop-legend-block").hidden = !showStops;
+  document.getElementById("bus-legend").hidden = !showStops;
 }
 
 function render() {
   if (tractLayer) tractLayer.setStyle(tractStyle);
   if (ntaLayer) ntaLayer.setStyle(ntaStyle);
-  if (stopLayer) stopLayer.setStyle(stopStyle);
+  renderMapLayers();
   updateFigures();
   updateLegend();
   updateSummary();
+}
+
+function selectNta(nta) {
+  picker.value = nta;
+  picker.dispatchEvent(new Event("change"));
+}
+
+function ntaPopup(nta) {
+  const c = countsFor(nta);
+  const div = document.createElement("div");
+  const name = document.createElement("strong");
+  name.textContent = ntaNames[nta];
+  const detail = document.createElement("div");
+  detail.textContent = c.served < MIN_SERVED
+    ? `Too few served stops to show a share: ${c.served} at ${SNAPSHOT_LABELS[state.snapshot]}.`
+    : noFoodSentence(c);
+  div.append(name, detail);
+  return div;
 }
 
 function zoomToSelection() {
@@ -261,21 +402,40 @@ async function init() {
     ntaLayer = L.geoJSON(ntaData, {
       style: ntaStyle,
       onEachFeature: (feature, layer) => {
-        layer.on("click", () => {
-          picker.value = feature.properties.nta2020;
-          picker.dispatchEvent(new Event("change"));
-        });
+        layer.on("click", () => selectNta(feature.properties.nta2020));
       },
     }).addTo(map);
 
     stops = stopData.features;
-    stopLayer = L.geoJSON(stopData, {
-      pointToLayer: (feature, latlng) => L.circleMarker(latlng, stopStyle(feature)),
-      // maxWidth keeps the longer food popup inside a 375 px phone screen.
-      onEachFeature: (feature, layer) => layer.bindPopup(() => stopPopup(feature), { maxWidth: 260 }),
-    }).addTo(map);
-
+    buildStopCounts();
     fillPicker(ntaData.features);
+
+    // NTA circles at each NTA's interior point (from the build script). Clicking one selects
+    // the NTA, like the picker, and shows its figure.
+    circleLayer = L.layerGroup().addTo(map);
+    for (const f of ntaFeatures) {
+      const { nta2020, circle_lat, circle_lon } = f.properties;
+      const latlng = [circle_lat, circle_lon];
+      const circle = L.circleMarker(latlng, circleStyle(nta2020));
+      circle.on("click", () => {
+        selectNta(nta2020);
+        map.openPopup(ntaPopup(nta2020), latlng, { maxWidth: 260, autoPan: false });
+      });
+      ntaCircles[nta2020] = circle;
+    }
+
+    // Stop markers are built once; renderMapLayers() decides which are drawn.
+    stopLayer = L.layerGroup().addTo(map);
+    L.geoJSON(stopData, {
+      pointToLayer: (feature, latlng) => L.circleMarker(latlng, stopStyle(feature)),
+      onEachFeature: (feature, layer) => {
+        // maxWidth keeps the longer food popup inside a 375 px phone screen.
+        layer.bindPopup(() => stopPopup(feature), { maxWidth: 260 });
+        stopMarkers.push(layer);
+      },
+    });
+    map.on("zoomend", renderMapLayers);
+
     zoomToSelection();
     render();
   } catch (err) {
@@ -337,5 +497,5 @@ document.querySelectorAll('input[name="measure"]').forEach((input) => {
 });
 
 updateLegend();
-fillFoodLegend();
+fillFoodLegends();
 init();
