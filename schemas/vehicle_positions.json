@@ -7,5 +7,6 @@
   {"name": "direction_ref", "type": "STRING", "mode": "NULLABLE", "description": "Inbound or outbound direction as returned by SIRI; required for per-direction frequency analysis"},
   {"name": "next_stop_ref", "type": "STRING", "mode": "NULLABLE", "description": "Stop ID of the next stop the vehicle is approaching; used to derive stop-level service frequency"},
   {"name": "bearing", "type": "FLOAT64", "mode": "NULLABLE", "description": "Vehicle heading in degrees; captured for potential visualization use; not used in core analysis"},
+  {"name": "occupancy", "type": "STRING", "mode": "NULLABLE", "description": "Bus Time crowding indicator from MonitoredVehicleJourney.Occupancy: full, seatsAvailable, or standingAvailable; null when the bus does not report it or for rows collected before the Occupancy deploy"},
   {"name": "collected_at", "type": "TIMESTAMP", "mode": "NULLABLE", "description": "UTC timestamp at time of API call; partition key"}
 ]
