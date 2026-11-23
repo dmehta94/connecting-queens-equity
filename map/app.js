@@ -249,9 +249,14 @@ function fillFoodLegends() {
     border: `${darkest ? 2 : 1}px solid ${c.ring}`,
     boxShadow: darkest ? `0 0 0 1px ${c.fill}` : "",
   });
-  document.getElementById("food-legend").replaceChildren(
-    ...legendItems(FOOD_CLASSES, (c) => ringStyle(c, c.score === 0)),
-  );
+  // Hollow stops: solid gray ring (stopStyle). Hollow NTA circles: dashed ink ring (circleStyle).
+  const unserved = { label: "No scheduled local service in this snapshot" };
+  document.getElementById("food-legend").replaceChildren(...legendItems(
+    [...FOOD_CLASSES, unserved],
+    (c) => (c === unserved
+      ? { background: "#ffffff", border: "2px solid var(--unserved)" }
+      : ringStyle(c, c.score === 0)),
+  ));
   const tooFew = { label: `Fewer than ${MIN_SERVED} served stops, or no households` };
   document.getElementById("nta-food-legend").replaceChildren(...legendItems(
     [...NTA_FOOD_CLASSES, tooFew],
@@ -313,7 +318,6 @@ function renderMapLayers() {
   const showStops = !borough || Boolean(state.nta);
   document.getElementById("nta-legend-block").hidden = !borough;
   document.getElementById("stop-legend-block").hidden = !showStops;
-  document.getElementById("bus-legend").hidden = !showStops;
 }
 
 function render() {

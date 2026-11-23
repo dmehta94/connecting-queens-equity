@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;600&family=EB+Garamond:wght@500&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2026-11-23">
 </head>
 <body>
   <div id="map" aria-label="Map of Queens neighborhoods, census tracts, and bus stops"></div>
@@ -36,20 +36,6 @@
       </dl>
     </section>
 
-    <fieldset class="toggle" aria-label="Shade census tracts by">
-      <input type="radio" name="measure" id="measure-cars" value="cars" checked>
-      <label for="measure-cars">Short on cars</label>
-      <input type="radio" name="measure" id="measure-burden" value="burden">
-      <label for="measure-burden">Housing cost burden</label>
-    </fieldset>
-
-    <div class="tract-legend">
-      <p class="legend-title" id="legend-title"></p>
-      <ul class="ramp" id="ramp" aria-label="Color key for census tracts"></ul>
-      <p class="legend-nodata"><span class="swatch nodata"></span> No data: no households (parks, cemeteries, airports, industrial land)</p>
-      <p class="legend-note" id="cars-note">This counts households with fewer vehicles than members, and members include children.</p>
-    </div>
-
     <div class="section">
       <span class="field-label">Bus service</span>
       <fieldset class="toggle" aria-label="Service snapshot">
@@ -60,26 +46,38 @@
       </fieldset>
 
       <p id="summary" aria-live="polite">Loading…</p>
-
-      <ul class="legend" id="bus-legend">
-        <li><span class="dot served"></span> Filled: scheduled local bus service, 10 AM to 2 PM (color shows food access, below)</li>
-        <li><span class="dot unserved"></span> Hollow: no scheduled local service in this snapshot</li>
-      </ul>
+      <p id="food-summary" aria-live="polite"></p>
     </div>
 
-    <div class="section">
-      <span class="field-label">Essential services: food</span>
-      <div id="nta-legend-block">
-        <p class="legend-title">Neighborhoods: share of served stops with no nutritious, affordable food within a 5-minute walk</p>
-        <ul class="legend" id="nta-food-legend" aria-label="Color key for neighborhood circles"></ul>
-        <p class="legend-note">Zoom in to see each stop.</p>
+    <fieldset class="toggle" aria-label="Shade census tracts by">
+      <input type="radio" name="measure" id="measure-cars" value="cars" checked>
+      <label for="measure-cars">Short on cars</label>
+      <input type="radio" name="measure" id="measure-burden" value="burden">
+      <label for="measure-burden">Housing cost burden</label>
+    </fieldset>
+
+    <div class="section map-legend" aria-label="Map legend">
+      <div class="tract-legend">
+        <p class="legend-title" id="legend-title"></p>
+        <ul class="ramp" id="ramp" aria-label="Color key for census tracts"></ul>
+        <p class="legend-nodata"><span class="swatch nodata"></span> No data: no households (parks, cemeteries, airports, industrial land)</p>
+        <p class="legend-note" id="cars-note">This counts households with fewer vehicles than members, and members include children.</p>
       </div>
-      <div id="stop-legend-block">
-        <p class="legend-title">Stops: nutritious, affordable food within a 5-minute walk</p>
-        <ul class="legend" id="food-legend" aria-label="Color key for bus stops"></ul>
+
+      <div class="legend-group">
+        <span class="field-label">Essential services: food</span>
+        <div id="nta-legend-block">
+          <p class="legend-title">Neighborhoods: share of served stops with no nutritious, affordable food within a 5-minute walk</p>
+          <ul class="legend" id="nta-food-legend" aria-label="Color key for neighborhood circles"></ul>
+          <p class="legend-note">Zoom in to see each stop.</p>
+        </div>
+        <div id="stop-legend-block">
+          <p class="legend-title">Stops: nutritious, affordable food within a 5-minute walk</p>
+          <ul class="legend" id="food-legend" aria-label="Color key for bus stops"></ul>
+          <p class="legend-note" id="plate-note">Plates are Harvard T.H. Chan School of Public Health's <a href="https://nutritionsource.hsph.harvard.edu/healthy-eating-plate/">Healthy Eating Plate</a>: ½ vegetables and fruits, ¼ whole grains, ¼ healthy protein. Full plate: stores cover it all.</p>
+        </div>
+        <p class="legend-note">Assumes stores are open in both weekday and Sunday service.</p>
       </div>
-      <p class="legend-note">Assumes stores are open in both weekday and Sunday service.</p>
-      <p id="food-summary" aria-live="polite"></p>
     </div>
 
     <p class="credits">
@@ -93,6 +91,6 @@
   </aside>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="app.js?v=2026-11-21-ca37d5"></script>
+  <script src="app.js?v=2026-11-23-ca37d5"></script>
 </body>
 </html>

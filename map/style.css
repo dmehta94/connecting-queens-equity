@@ -256,14 +256,16 @@ select {
   border-radius: 50%;
 }
 
-.dot.served { background: #fe9929; border: 1px solid var(--ink); }
-.dot.unserved { background: #fff; border: 2px solid var(--unserved); }
-
 #food-summary {
   margin: 8px 0 0;
   font-weight: 600;
   line-height: 1.45;
 }
+
+/* One legend block, all at legend size. */
+.map-legend { font-size: 13px; line-height: 1.45; }
+.map-legend .tract-legend { margin-top: 0; }
+.legend-group { margin-top: 8px; }
 
 .section .legend-title {
   margin: 0 0 2px;
