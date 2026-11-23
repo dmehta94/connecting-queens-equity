@@ -1,7 +1,7 @@
 # Connecting Queens: Equity in Transit & Access (v2)
 
 ## What this project is
-A transit equity analysis of the Queens bus network, rooted in Dev's experience growing up in Bellerose, Eastern Queens. v2 is a GCP-native rebuild of his GA capstone (v1 repo: dmehta94/project-capstone-transit-inequity-eastern-queens). The near-term goal is an NYC Open Data Week 2027 workshop proposal, due Dec 6, 2026 (Dev's target: submit Sat Nov 21, 2026).
+A transit equity analysis of the Queens bus network, rooted in Dev's experience growing up in Bellerose, Eastern Queens. v2 is a GCP-native rebuild of his GA capstone (v1 repo: dmehta94/project-capstone-transit-inequity-eastern-queens). The near-term goal is an NYC Open Data Week 2027 workshop proposal ("The Connecting Queens Digital Scavenger Hunt: A Single Borough, a Single Fare," a one-hour hands-on hybrid workshop), due Dec 6, 2026 (Dev's target: submit Sat Nov 21, 2026).
 
 Research question: Which bus stops have the worst combined physical access to essential services and the lowest service quality, and are those stops disproportionately located in transit-dependent communities?
 
@@ -64,7 +64,7 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 - Collection: `src/collection.py`, containerized as a Cloud Run Job, triggered by Cloud Scheduler every 15 minutes (`*/15 * * * *`), running since April 2026. Functions: `fetch_vehicle_positions()`, `parse_vehicle_positions()`, `insert_vehicle_positions()`, `log_collection_sweep()`. Image built with `gcloud builds submit` and pushed to Artifact Registry.
 - Credentials: Application Default Credentials locally. Service account `connecting-queens-equity-sa` is attached to Cloud Run (bigquery.dataEditor, bigquery.jobUser, run.invoker). Key creation is blocked by `constraints/iam.disableServiceAccountKeyCreation`.
 - `.env` (gitignored): `MTA_API_KEY`, `CENSUS_API_KEY`. Never print or commit their values.
-- Layout: `src/` (collection, clustering, proximity, equity, visualization), `app/` (Streamlit scaffold, six stubbed tabs; predates the re-scope), `scripts/` (one-time scripts), `schemas/` (BigQuery schema JSON), `data/raw/` (static sources; gitignored).
+- Layout: `src/` (built: `collection.py`, `proximity.py`, `tract_nta.py`, `transit_dependency.py`; planned: clustering, equity, visualization), `map/` (static workshop map, published with GitHub Pages; data built by `scripts/build_map_data.py`), `app/` (Streamlit scaffold, six stubbed tabs; predates the re-scope), `scripts/` (one-time scripts), `schemas/` (BigQuery schema JSON), `data/raw/` (static sources; gitignored).
 
 ## Data
 - 122 Queens routes (MTA's headline 124 double-counts two variants). 8 shuttles excluded: Q92, Q93, Q96, Q97, Q107, Q108, Q109, Q121.
@@ -93,6 +93,7 @@ Known gotcha: this Windows repo uses CRLF line endings. Preserve each file's exi
 - Connectivity graph: Queens bus routes plus subway links within Queens only. No LIRR, no subway outside Queens. Community definitions use only spatial and network structure, never outcome variables.
 
 ## Workshop map
+- Live at https://dmehta94.github.io/connecting-queens-equity/map/. Built so far: NTA views with an NTA picker, a weekday/Sunday toggle, the transit dependency tract layer, the food access layer, NTA circles at borough zoom, and hollow circles for NTAs with no households (or too few served stops).
 - One screen, two or three controls: NTA picker and a weekday/Sunday toggle.
 - Works on phones, venue Wi-Fi, or a video call, with no login. Precomputed and static, not a live BigQuery connection.
 - Starts with proximity; service-quality layers are added as they are completed.
