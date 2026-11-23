@@ -108,8 +108,10 @@ def parse_vehicle_positions(
     Returns:
         records: List of specified information for each vehicle active on the
         route in question: position_id, route_id, vehicle_id, latitude,
-        longitude, direction_ref, next_stop_ref, bearing, collected_at.
-        Returns an empty list if vehicles is empty.
+        longitude, direction_ref, next_stop_ref, bearing, occupancy,
+        collected_at. occupancy is Bus Time's optional crowding indicator
+        ('full', 'seatsAvailable', or 'standingAvailable'); it is None when
+        the bus doesn't report it. Returns an empty list if vehicles is empty.
     
     Example:
         >>> records = parse_vehicle_positions(
@@ -131,6 +133,7 @@ def parse_vehicle_positions(
             "direction_ref": journey.get("DirectionRef"),
             "next_stop_ref": journey.get("MonitoredCall", {}).get("StopPointRef"),
             "bearing": journey.get("Bearing"),
+            "occupancy": journey.get("Occupancy"),
             "collected_at": datetime.now(timezone.utc).isoformat()
         })
     return records
@@ -150,7 +153,9 @@ def insert_vehicle_positions(
     Args:
         rows: List of dicts shaped to the vehicle_positions schema. Each dict
             must contain: position_id, route_id, vehicle_id, latitude,
-            longitude, direction_ref, next_stop_ref, bearing, collected_at.
+            longitude, direction_ref, next_stop_ref, bearing, occupancy,
+            collected_at. The table must already have every one of these
+            columns, or BigQuery rejects the rows.
         client: Authenticated BigQuery client instance.
 
     Returns:

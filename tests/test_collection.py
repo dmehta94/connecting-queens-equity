@@ -51,8 +51,24 @@ def test_returns_exactly_the_schema_columns():
 
     assert set(record) == {
         "position_id", "route_id", "vehicle_id", "latitude", "longitude",
-        "direction_ref", "next_stop_ref", "bearing", "collected_at",
+        "direction_ref", "next_stop_ref", "bearing", "occupancy",
+        "collected_at",
     }
+
+
+def test_occupancy_is_read_from_monitored_vehicle_journey():
+    vehicle = make_vehicle(Occupancy="seatsAvailable")
+
+    [record] = parse_vehicle_positions(ROUTE_ID, [vehicle])
+
+    assert record["occupancy"] == "seatsAvailable"
+
+
+def test_missing_occupancy_becomes_none():
+    # Bus Time omits Occupancy entirely for buses that don't report it.
+    [record] = parse_vehicle_positions(ROUTE_ID, [make_vehicle()])
+
+    assert record["occupancy"] is None
 
 
 def test_missing_optional_fields_become_none():
